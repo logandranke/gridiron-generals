@@ -794,7 +794,7 @@ function defSpec(d){
   const f={rush:d.dRush,cover:d.dCover,run:d.dRun};
   const avg=(f.rush+f.cover+f.run)/3, top=Object.keys(f).sort((a,b)=>f[b]-f[a])[0];
   const L={rush:{t:'Pass Rush',e:'⚡'},cover:{t:'Lockdown Coverage',e:'🔒'},run:{t:'Run Stuffers',e:'🧱'}};
-  if(f[top]-avg<2.0)return {t:'Balanced D',e:'🛡️',facet:'balanced'};
+  if(f[top]-avg<2.0)return {t:'Balanced',e:'🛡️',facet:'balanced'};
   return {...L[top],facet:top};
 }
 // color-coded specialty chip, shared by the draft pool card and the game-plan roster row
