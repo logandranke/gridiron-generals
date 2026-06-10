@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRIDIRON GENERALS</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Anton&family=Archivo+Black&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --turf1:#2f7d3c;--turf2:#2a7235;--yard:rgba(255,255,255,.16);
+    --paper:#f3ecd7;--paper2:#e7ddc4;
+    --navy:#16284a;--red:#b21e2e;--gold:#c99a3c;--gd:#a8331f;--cream:#f3ecd7;
+    --ink:#16284a;--mut:#6f6347;--mut2:#8a7c5a;
+    --p1:#16284a;--p2:#b21e2e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:#2a7235;color:var(--ink);font-family:'Barlow',sans-serif;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+  /* football field turf */
+  .bg{position:fixed;inset:0;z-index:0;background:#2a7235;
+    background-image:repeating-linear-gradient(90deg,var(--yard) 0 2px,transparent 2px 96px),repeating-linear-gradient(90deg,var(--turf1) 0 48px,var(--turf2) 48px 96px);}
+  .bg::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(130% 100% at 50% -8%,transparent 52%,rgba(0,0,0,.30));}
+  #app{position:relative;z-index:1;}
+  .hdr{text-align:center;padding:1.3rem 1rem .9rem;}
+  .hdr h1{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(2.3rem,8vw,4.4rem);letter-spacing:.01em;color:var(--red);line-height:1;text-shadow:3px 3px 0 var(--gold),5px 5px 0 var(--navy);}
+  .hdr p{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.3em;text-transform:uppercase;color:var(--cream);margin-top:.5rem;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .sc{display:none;padding:1rem;max-width:1100px;margin:0 auto;}.sc.on{display:block;}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-top:.6rem;}
+  .g2.single{grid-template-columns:1fr;max-width:430px;margin-left:auto;margin-right:auto;}
+  /* ── mode-select screen ── */
+  .modeTtl{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;text-align:center;color:var(--cream);font-size:1.55rem;letter-spacing:.04em;margin:.5rem 0 1.4rem;text-shadow:3px 3px 0 var(--gold),5px 5px 0 var(--navy);}
+  .modeGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;}
+  .modeCard{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.55rem;background:var(--paper);border:3px solid var(--navy);border-radius:14px;box-shadow:6px 6px 0 var(--navy);padding:1.7rem 1.05rem;cursor:pointer;font-family:inherit;color:var(--ink);transition:transform .12s,box-shadow .12s,border-color .12s;}
+  .modeCard:hover:not(.soon){transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--gold);border-color:var(--gold);}
+  .modeIco{font-size:2.7rem;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));}
+  .modeName{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.18rem;color:var(--navy);letter-spacing:.03em;}
+  .modeDesc{font-family:'Barlow',sans-serif;font-size:.85rem;color:rgba(22,40,74,.72);line-height:1.36;}
+  .modeCard.soon{opacity:.58;cursor:not-allowed;box-shadow:4px 4px 0 rgba(22,40,74,.45);}
+  .soonBadge{position:absolute;top:.55rem;right:.55rem;font-family:'Anton',sans-serif;font-size:.58rem;text-transform:uppercase;background:var(--red);color:#fff;padding:.2rem .45rem;border-radius:4px;letter-spacing:.04em;}
+  .backLink{display:inline-block;margin:0 0 .7rem;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:.72rem;color:rgba(245,240,232,.62);}
+  .backLink:hover{color:var(--gold);}
+  .modeNote{text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:.95rem;letter-spacing:.02em;color:var(--gold);margin-bottom:.3rem;min-height:1.1rem;}
+  .cpuNote{margin-top:.3rem;font-family:'Barlow Condensed',sans-serif;font-style:italic;font-size:.92rem;color:var(--mut2);background:rgba(22,40,74,.06);border:2px dashed rgba(22,40,74,.3);border-radius:7px;padding:.5rem .65rem;}
+  .diffRow{max-width:480px;margin:1.1rem auto 0;}
+  .diffTtl{text-align:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(245,240,232,.62);margin-bottom:.45rem;}
+  .diffDesc{margin-top:.5rem;text-align:center;font-family:'Barlow',sans-serif;font-size:.86rem;line-height:1.38;color:var(--gold);}
+  .pg.cpuwait{opacity:.82;}
+  @media(max-width:600px){.modeGrid{grid-template-columns:1fr;}}
+  /* cream paper cards */
+  .cc,.rbox,.tr,.rp,.sp2,.km,.fieldWrap{background:var(--paper);border:3px solid var(--navy);border-radius:10px;box-shadow:5px 5px 0 var(--navy);color:var(--ink);}
+  .cc{padding:1.2rem;}
+  .cc.p1{box-shadow:6px 6px 0 var(--navy);}
+  .cc.p2{box-shadow:6px 6px 0 var(--red);}
+  .cc label,.cl2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:var(--mut2);display:block;margin-bottom:.35rem;}
+  .cl2{margin:.9rem 0 .4rem;}
+  .cc input{width:100%;background:#fff;border:2px solid var(--navy);border-radius:6px;color:var(--ink);font-family:'Barlow',sans-serif;font-size:1rem;padding:.6rem .85rem;outline:none;transition:box-shadow .15s;}
+  .cc input:focus{box-shadow:0 0 0 3px rgba(22,40,74,.2);}
+  .cc.p2 input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(178,30,46,.2);}
+  .cbadge{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.2rem;letter-spacing:.02em;margin-bottom:.55rem;color:var(--navy);}
+  .cc.p2 .cbadge{color:var(--red);}
+  .rbox{padding:1rem 1.15rem;margin-top:1.1rem;}
+  .rbox .rl{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.8rem;letter-spacing:.05em;color:var(--red);margin-bottom:.4rem;}
+  .rbox p{font-size:.92rem;color:var(--mut);line-height:1.7;}
+  .rbox strong{color:var(--navy);}
+  /* buttons */
+  .btn{display:block;width:100%;margin-top:1.2rem;padding:.7rem;background:var(--navy);color:var(--cream);border:3px solid var(--navy);border-radius:9px;box-shadow:5px 5px 0 var(--red);font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.3rem;letter-spacing:.04em;cursor:pointer;transition:transform .07s,box-shadow .07s;}
+  .btn:hover{transform:translate(-1px,-1px);box-shadow:6px 6px 0 var(--red);}
+  .btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--red);}
+  .btn:disabled{opacity:.5;cursor:wait;box-shadow:5px 5px 0 var(--red);}
+  .btn.ghost{background:var(--paper);color:var(--navy);box-shadow:5px 5px 0 var(--navy);}
+  .btn.ghost:hover{box-shadow:6px 6px 0 var(--navy);}
+  /* draft header */
+  .dh{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.65rem;margin-bottom:.9rem;}
+  .dcn{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.05rem;letter-spacing:.02em;background:var(--cream);border:2px solid var(--navy);border-radius:7px;padding:.25rem .65rem;box-shadow:3px 3px 0 var(--navy);justify-self:start;}
+  .dcn.p1{color:var(--navy);border-color:var(--navy);box-shadow:3px 3px 0 var(--navy);}
+  .dcn.p2{color:var(--red);border-color:var(--red);box-shadow:3px 3px 0 var(--red);justify-self:end;}
+  .tbn{border-radius:7px;padding:.35rem .9rem;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.92rem;letter-spacing:.03em;text-align:center;white-space:nowrap;box-shadow:3px 3px 0 rgba(0,0,0,.25);border:2px solid rgba(0,0,0,.15);}
+  /* team reveal */
+  .tr{border-radius:10px;padding:1rem 1.25rem;margin-bottom:.85rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.35rem;position:relative;overflow:hidden;}
+  .trL{display:flex;align-items:center;gap:.85rem;}
+  .trLogo{width:54px;height:54px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3));}
+  .trColorBar{position:absolute;left:0;top:0;bottom:0;width:6px;}
+  .tc{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.75rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mut2);}
+  .tn{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(1.5rem,4vw,2.4rem);letter-spacing:.01em;color:var(--navy);line-height:1;}
+  .ri{text-align:right;}
+  .rnum{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut2);}
+  .plbl{font-family:'Oswald',sans-serif;font-weight:700;font-size:.95rem;letter-spacing:.03em;text-transform:uppercase;margin-top:.15rem;}
+  .plbl.p1{color:var(--navy);}.plbl.p2{color:var(--red);}
+  /* filter row */
+  .pf{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem;align-items:center;}
+  .pfl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--cream);margin-right:.2rem;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .pb2{font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;font-size:.82rem;letter-spacing:.02em;background:var(--cream);border:2px solid var(--navy);border-radius:6px;color:var(--navy);padding:.25rem .6rem;cursor:pointer;box-shadow:2px 2px 0 var(--navy);transition:.1s;}
+  .pb2:hover{transform:translate(-1px,-1px);}
+  .pb2.on{background:var(--navy);color:var(--cream);}
+  /* pool */
+  .pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.7rem;margin-bottom:.8rem;max-height:320px;overflow-y:auto;padding:.15rem .15rem .5rem;}
+  .pc{background:var(--paper);border:3px solid var(--navy);border-radius:9px;box-shadow:4px 4px 0 var(--navy);padding:.7rem .8rem;cursor:pointer;transition:transform .1s,box-shadow .1s;}
+  .pc:hover{transform:translate(-1px,-2px);box-shadow:5px 6px 0 var(--red);}
+  .pc.sel{background:#fff8e6;box-shadow:5px 5px 0 var(--gold);border-color:var(--gold);}
+  .pc.dk{opacity:.4;cursor:not-allowed;pointer-events:none;box-shadow:3px 3px 0 var(--navy);}
+  .pc .pp{display:inline-block;font-family:'Anton',sans-serif;font-size:.7rem;letter-spacing:.02em;color:var(--cream);background:var(--navy);padding:.12rem .42rem;border-radius:3px;}
+  .pc .pn{font-family:'Archivo Black',sans-serif;font-size:.96rem;color:var(--navy);line-height:1.1;margin-top:.45rem;}
+  .pc .pr{margin-top:.3rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.74rem;letter-spacing:.03em;color:var(--red);}
+  .pc .pspec{display:inline-flex;align-items:center;gap:.3em;margin-top:.45rem;font-family:'Anton',sans-serif;font-size:.76rem;letter-spacing:.04em;text-transform:uppercase;padding:.26rem .58rem;border-radius:6px;border:2.5px solid rgba(22,40,74,.9);box-shadow:2px 2px 0 rgba(22,40,74,.4);}
+  .psi{font-size:1.3em;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45));}
+  .spec-rush{background:var(--red);color:#fff;}
+  .spec-cover{background:var(--navy);color:var(--paper);}
+  .spec-run{background:#2f7d3c;color:#fff;}
+  .spec-balanced{background:var(--gold);color:var(--navy);}
+  .sf{color:var(--red);font-size:.62rem;}
+  .nop{color:var(--cream);font-style:italic;font-size:.85rem;padding:.8rem 0;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  /* rosters */
+  .rr{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-top:.2rem;}
+  .rp{border-radius:10px;padding:.85rem .95rem;}
+  .rp.p1{box-shadow:5px 5px 0 var(--navy);}
+  .rp.p2{box-shadow:5px 5px 0 var(--red);}
+  .rp.active{outline:3px solid var(--gold);outline-offset:1px;}
+  .rtt{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:.03em;color:var(--navy);margin-bottom:.5rem;}
+  .rp.p2 .rtt{color:var(--red);}
+  .rs{display:flex;align-items:center;gap:.45rem;padding:.3rem 0;border-bottom:2px dotted rgba(22,40,74,.22);}
+  .rs:last-child{border-bottom:none;}
+  .sp{font-family:'Anton',sans-serif;font-size:.68rem;color:var(--cream);background:var(--navy);border-radius:3px;padding:.08rem 0;width:34px;text-align:center;flex-shrink:0;}
+  .sn{font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--navy);flex:1;font-size:.88rem;}
+  .st2{font-size:.62rem;color:var(--mut2);margin-left:.18rem;}
+  .se{color:rgba(22,40,74,.3);font-style:italic;font-size:.74rem;}
+  .rnd{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.66rem;letter-spacing:.04em;color:var(--mut);margin-top:.45rem;}
+  /* progress */
+  .pbw{background:rgba(0,0,0,.25);border:2px solid var(--navy);border-radius:6px;height:10px;margin-top:.9rem;overflow:hidden;}
+  .pbr{height:100%;background:var(--red);transition:width .4s ease;}
+  /* scoreboard */
+  .sb{background:var(--navy);border:3px solid var(--navy);border-radius:10px;box-shadow:5px 5px 0 var(--red);padding:.9rem 1.4rem;margin-bottom:.9rem;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.9rem;text-align:center;}
+  .stn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);}
+  .sc2{font-family:'Oswald',sans-serif;font-weight:700;font-size:3rem;line-height:1;letter-spacing:.02em;color:var(--cream);}
+  .sc2.p1{color:#cfe0ff;}.sc2.p2{color:#ffb3b3;}
+  .sv{font-family:'Oswald',sans-serif;font-weight:700;font-size:1.4rem;color:var(--gold);}
+  .qd{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-top:.15rem;}
+  /* sim feed = scoreboard ticker */
+  .pbp{background:var(--navy);border:3px solid var(--navy);border-radius:10px;box-shadow:5px 5px 0 var(--gold);height:300px;overflow-y:auto;padding:.9rem 1rem;scroll-behavior:smooth;color:var(--cream);}
+  .pe{padding:.45rem .2rem;border-bottom:1px solid rgba(255,255,255,.08);font-size:.9rem;line-height:1.5;animation:fi .3s ease;color:var(--cream);}
+  .pe:last-child{border-bottom:none;}
+  @keyframes fi{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+  .ptd{color:var(--gold);font-weight:700;}.pfg{color:#c9b3ff;}.ppu,.pinc{color:#b9c4d8;}.prun{color:#7fe0a8;}.ppa{color:#9ec3ff;}
+  .pdrv{color:#b9c4d8;font-size:.82rem;}.pto{color:#ff9a9a;font-weight:700;}.pbig{color:#9ec3ff;}
+  .pq{text-align:center;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.92rem;letter-spacing:.06em;color:var(--gold);padding:.6rem 0 .3rem;}
+  .dspec{display:inline-flex;align-items:center;gap:.3em;font-family:'Anton',sans-serif;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;padding:.18rem .48rem;border-radius:5px;border:2.5px solid rgba(22,40,74,.9);margin-left:.45rem;vertical-align:middle;white-space:nowrap;}
+  /* results */
+  .rf{text-align:center;padding:1.2rem 0 .7rem;}
+  .rl2{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;color:var(--cream);margin-bottom:.3rem;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .rw{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(2.2rem,7vw,4rem);letter-spacing:.01em;color:var(--cream);line-height:1;text-shadow:3px 3px 0 var(--red),5px 5px 0 var(--navy);}
+  .rsc{font-family:'Oswald',sans-serif;font-weight:600;font-size:1.2rem;color:var(--cream);margin:.5rem 0 .9rem;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .sg{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:.9rem 0;}
+  .sp2{border-radius:10px;padding:.95rem;}
+  .sp2.p1{box-shadow:5px 5px 0 var(--navy);}
+  .sp2.p2{box-shadow:5px 5px 0 var(--red);}
+  .spt{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:.03em;color:var(--navy);margin-bottom:.6rem;}
+  .sp2.p2 .spt{color:var(--red);}
+  .sr{display:flex;justify-content:space-between;align-items:center;padding:.3rem 0;border-bottom:2px dotted rgba(22,40,74,.18);font-size:.85rem;}
+  .sr:last-child{border-bottom:none;}.sl{color:var(--mut);}.svl{font-family:'Barlow Condensed',sans-serif;font-weight:700;color:var(--navy);}
+  .totals{margin-bottom:.2rem;}
+  /* player breakdown — visually broken out from the team totals into its own inset table */
+  .bxhd{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.72rem;letter-spacing:.06em;color:var(--red);margin:.9rem 0 .45rem;padding-top:.7rem;border-top:3px double rgba(22,40,74,.4);}
+  .bx{background:rgba(22,40,74,.05);border:2px solid rgba(22,40,74,.2);border-radius:7px;padding:.25rem .6rem;}
+  .bxr{display:flex;flex-direction:column;gap:.1rem;padding:.4rem 0;border-bottom:2px dotted rgba(22,40,74,.2);}
+  .bxr:last-child{border-bottom:none;}
+  .bxtop{display:flex;align-items:center;gap:.5rem;}
+  .bxp{font-family:'Anton',sans-serif;font-size:.62rem;color:var(--cream);background:var(--navy);border-radius:3px;padding:.05rem .34rem;flex-shrink:0;}
+  .bxn{font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;color:var(--navy);font-size:.92rem;letter-spacing:.01em;}
+  .bxs{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.82rem;color:var(--mut);padding-left:.1rem;}
+  /* MVP */
+  .mvc{background:var(--navy);border:3px solid var(--navy);border-radius:10px;box-shadow:5px 5px 0 var(--gold);padding:.95rem 1.2rem;margin:.9rem 0;display:flex;align-items:center;gap:.9rem;}
+  .mvi{font-size:1.9rem;flex-shrink:0;}
+  .mvl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.1rem;}
+  .mvn{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.5rem;letter-spacing:.02em;color:var(--cream);line-height:1;}
+  .mvs2{font-size:.84rem;color:#cfd8e6;margin-top:.1rem;}
+  /* highlights */
+  .km{border-radius:10px;padding:.95rem;margin:.7rem 0;}
+  .kmt{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.82rem;letter-spacing:.03em;color:var(--navy);margin-bottom:.6rem;}
+  .me{padding:.45rem 0;border-bottom:2px dotted rgba(22,40,74,.18);font-size:.88rem;color:var(--navy);line-height:1.5;}
+  .me:last-child{border-bottom:none;}.ms{color:var(--red);margin-right:.25rem;}
+  /* toggle */
+  .tog{display:flex;align-items:center;gap:.6rem;margin-top:1rem;cursor:pointer;user-select:none;}
+  .tog input{display:none;}
+  .togbox{width:46px;height:24px;border-radius:50px;background:rgba(0,0,0,.2);border:2px solid var(--navy);position:relative;flex-shrink:0;transition:background .2s;}
+  .togbox::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--navy);transition:transform .2s;}
+  .tog input:checked+.togbox{background:var(--red);border-color:var(--red);}
+  .tog input:checked+.togbox::after{transform:translateX(22px);background:var(--cream);}
+  .togtx{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.92rem;color:var(--cream);text-shadow:0 1px 2px rgba(0,0,0,.4);}.togtx em{color:var(--gold);font-size:.84rem;font-style:normal;}
+  /* on-the-clock banner */
+  .clock{text-align:center;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.3rem;letter-spacing:.03em;padding:.5rem;border-radius:9px;margin-bottom:.8rem;border:3px solid var(--navy);box-shadow:4px 4px 0 rgba(0,0,0,.25);transition:.2s;}
+  .clock.p1{background:var(--navy);color:var(--cream);border-color:var(--navy);}
+  .clock.p2{background:var(--red);color:var(--cream);border-color:var(--red);}
+  /* spin overlay */
+  .spin{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1.3rem;background:radial-gradient(70% 70% at 50% 40%,rgba(18,52,28,.92),rgba(7,22,12,.97));cursor:pointer;}
+  .spin.on{display:flex;animation:fi .25s ease;}
+  .spinHead{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(1.4rem,4vw,2.2rem);letter-spacing:.03em;color:var(--gold);text-shadow:2px 2px 0 rgba(0,0,0,.5);}
+  .reelWrap{position:relative;width:min(92vw,760px);height:150px;overflow:hidden;border-radius:12px;border:3px solid var(--gold);background:rgba(0,0,0,.35);box-shadow:0 12px 40px rgba(0,0,0,.5);-webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);}
+  .reel{display:flex;height:100%;will-change:transform;}
+  .reelCell{width:190px;flex:0 0 190px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4rem;padding:.5rem;}
+  .reelLogo{width:62px;height:62px;object-fit:contain;filter:drop-shadow(0 3px 8px rgba(0,0,0,.6));}
+  .reelMono{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:1.7rem;color:var(--navy);background:var(--gold);}
+  .reelName{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.05rem;letter-spacing:.02em;color:var(--cream);text-align:center;line-height:1;}
+  .reelMark{position:absolute;top:0;bottom:0;left:50%;width:3px;transform:translateX(-50%);background:var(--gold);box-shadow:0 0 16px 3px rgba(201,154,60,.7);}
+  .reelMark::before,.reelMark::after{content:'';position:absolute;left:50%;transform:translateX(-50%);border:7px solid transparent;}
+  .reelMark::before{top:-1px;border-top-color:var(--gold);}.reelMark::after{bottom:-1px;border-bottom-color:var(--gold);}
+  .coinWrap{display:none;flex-direction:column;align-items:center;gap:.7rem;opacity:0;transition:opacity .3s;}
+  .coinWrap.on{display:flex;opacity:1;}
+  .coinHead{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cream);}
+  .coinRow{display:flex;align-items:center;gap:1.1rem;}
+  .cfp{min-width:130px;padding:.55rem 1rem;border-radius:8px;text-align:center;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.2rem;border:3px solid var(--cream);background:rgba(243,236,215,.12);color:var(--cream);transition:.12s;}
+  .cfp.lit{transform:scale(1.06);}
+  #cf0.lit,#cf0.win{background:var(--navy);border-color:#cfe0ff;color:#fff;box-shadow:0 0 22px rgba(120,160,255,.5);}
+  #cf1.lit,#cf1.win{background:var(--red);border-color:#ffc0c0;color:#fff;box-shadow:0 0 22px rgba(255,120,120,.5);}
+  .cfp.win{transform:scale(1.12);}
+  .coin{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:1.5rem;color:var(--navy);background:var(--gold);box-shadow:0 6px 18px rgba(0,0,0,.5);animation:spinCoin 1.1s linear infinite;}
+  @keyframes spinCoin{0%{transform:rotateY(0)}100%{transform:rotateY(360deg)}}
+  .cfBadge{min-height:1.6rem;font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.4rem;letter-spacing:.02em;color:var(--gold);opacity:0;transition:opacity .3s;text-shadow:2px 2px 0 rgba(0,0,0,.5);}
+  .cfBadge.on{opacity:1;}
+  .spinSkip{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:rgba(243,236,215,.6);}
+  .spinLogoWrap{height:90px;display:flex;align-items:center;justify-content:center;}
+  .spinLogo{max-height:90px;max-width:160px;object-fit:contain;opacity:0;transform:scale(.6);transition:opacity .35s,transform .35s;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6));}
+  .spinLogo.on{opacity:1;transform:scale(1);}
+  /* play-style segmented control */
+  .seg{display:flex;gap:.35rem;}
+  .seg button{flex:1;padding:.45rem .3rem;border-radius:7px;border:2px solid var(--navy);background:var(--cream);color:var(--navy);font-family:'Oswald',sans-serif;font-weight:600;text-transform:uppercase;font-size:.8rem;letter-spacing:.01em;cursor:pointer;box-shadow:2px 2px 0 var(--navy);transition:.1s;}
+  .seg button:hover{transform:translate(-1px,-1px);}
+  .cc.p1 .seg button.on{background:var(--navy);color:var(--cream);}
+  .cc.p2 .seg button.on{background:var(--red);border-color:var(--red);color:var(--cream);box-shadow:2px 2px 0 var(--red);}
+  /* on-field formation */
+  .fieldWrap{margin:.2rem 0 .9rem;border-radius:10px;overflow:hidden;padding:0;}
+  .fieldTtl{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.8rem;letter-spacing:.03em;color:var(--cream);padding:.55rem .9rem;background:var(--navy);}
+  .field{position:relative;width:100%;aspect-ratio:16/8;background:repeating-linear-gradient(90deg,#2f7d3a 0 9.9%,#2c7636 9.9% 10%),linear-gradient(180deg,#2f7d3a,#286b31);}
+  .field::after{content:'';position:absolute;left:0;right:0;top:46%;height:3px;background:rgba(255,255,255,.85);}
+  .fchip{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:.12rem;width:84px;}
+  .fdot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:.72rem;color:#fff;border:2px solid rgba(255,255,255,.7);box-shadow:0 2px 6px rgba(0,0,0,.4);}
+  .fdot.ol{background:#8a7c5a;width:28px;height:28px;font-size:.62rem;}
+  .fdot.off{background:var(--red);}
+  .fdot.empty{background:rgba(0,0,0,.35);border-style:dashed;color:rgba(255,255,255,.5);}
+  .fdot.def{background:var(--navy);}
+  .fnm{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.64rem;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9);text-align:center;line-height:1;max-width:84px;}
+  .fnm.dim{color:rgba(255,255,255,.5);font-style:italic;}
+  /* plan screen */
+  .planTtl{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(1.6rem,5vw,2.4rem);letter-spacing:.02em;color:var(--cream);text-align:center;margin-top:.4rem;text-shadow:3px 3px 0 var(--red),5px 5px 0 var(--navy);}
+  .planSub{text-align:center;color:var(--cream);font-size:.92rem;margin:.4rem auto .2rem;max-width:620px;line-height:1.5;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .planRoster{margin:.7rem 0 .2rem;}
+  .pr-row{display:flex;align-items:baseline;gap:.55rem;padding:.18rem 0;border-bottom:2px dotted rgba(22,40,74,.18);font-family:'Barlow Condensed',sans-serif;font-size:.86rem;}
+  .pr-row:last-child{border-bottom:none;}
+  .pr-pos{font-family:'Anton',sans-serif;font-size:.64rem;color:var(--cream);background:var(--navy);border-radius:3px;padding:.05rem .34rem;flex-shrink:0;}
+  .pr-nm{color:var(--navy);font-weight:700;flex:1;}
+  .pr-tm{color:var(--mut2);font-size:.74rem;}
+  /* share row */
+  .shareRow{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;}
+  /* DRAFT button — make it POP: gold + navy, pulsing glow */
+  #cb{background:linear-gradient(180deg,#ffda5e,var(--gold));color:var(--navy);border:3px solid var(--navy);box-shadow:6px 6px 0 var(--red);font-size:1.5rem;animation:cbglow 1.15s ease-in-out infinite;}
+  #cb:active{transform:translate(2px,2px);}
+  @keyframes cbglow{0%,100%{box-shadow:6px 6px 0 var(--red);}50%{box-shadow:6px 6px 0 var(--red),0 0 20px 3px rgba(255,218,94,.75);}}
+  /* mid-sim → results button */
+  #simNext{margin-top:.9rem;}
+  /* ── "Keys to the Game" analyst breakdown ── */
+  .keysBtn{background:linear-gradient(135deg,#1d3a6b,var(--navy))!important;color:var(--gold)!important;border:3px solid var(--gold)!important;}
+  .keysPanel{background:var(--navy);border:3px solid var(--navy);border-radius:12px;box-shadow:6px 6px 0 var(--gold);padding:1.15rem 1.3rem;margin:.1rem 0 1rem;}
+  .keysHead{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;color:var(--gold);font-size:1.15rem;letter-spacing:.05em;border-bottom:2px solid rgba(243,236,215,.22);padding-bottom:.55rem;margin-bottom:.65rem;}
+  .keysBottom{font-family:'Barlow Condensed',sans-serif;font-style:italic;color:#cfe0c4;font-size:1.06rem;line-height:1.4;margin-bottom:.85rem;}
+  .keyRow{display:flex;gap:.85rem;padding:.65rem 0;border-bottom:1px solid rgba(243,236,215,.12);}
+  .keyRow:last-child{border-bottom:none;padding-bottom:.1rem;}
+  .keyIco{font-size:1.5rem;line-height:1.1;flex-shrink:0;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4));}
+  .keyLbl{font-family:'Anton',sans-serif;text-transform:uppercase;color:var(--paper);font-size:.86rem;letter-spacing:.035em;}
+  .keyTxt{font-family:'Barlow',sans-serif;color:#d4dbe5;font-size:.95rem;line-height:1.4;margin-top:.18rem;}
+  /* ── post-game awards (MVP + Biggest Bust) — big & embellished ── */
+  .awards{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0;}
+  .awc{display:flex;align-items:center;gap:1.1rem;border:3px solid var(--navy);border-radius:12px;padding:1.05rem 1.25rem;}
+  .awc.mvp{background:linear-gradient(135deg,#fff3cf,var(--paper));box-shadow:6px 6px 0 var(--gold);}
+  .awc.bust{background:linear-gradient(135deg,#f3d6cf,var(--paper));border-color:var(--red);box-shadow:6px 6px 0 var(--red);}
+  .awi{font-size:2.7rem;flex-shrink:0;filter:drop-shadow(0 2px 3px rgba(0,0,0,.3));}
+  .awl{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:.78rem;letter-spacing:.14em;color:var(--gd);}
+  .awc.mvp .awl{color:#b5851f;}
+  .awc.bust .awl{color:var(--red);}
+  .awn{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;font-size:1.65rem;letter-spacing:.01em;color:var(--navy);line-height:1.05;margin:.12rem 0;}
+  .aws{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.92rem;color:var(--mut);line-height:1.35;}
+  /* bigger, easier-to-read results body */
+  #sc-res .rw{font-size:clamp(2.6rem,8vw,4.6rem);}
+  #sc-res .me{font-size:.96rem;padding:.5rem 0;}
+  #sc-res .spt{font-size:.95rem;}
+  #sc-res .sr{font-size:.92rem;padding:.36rem 0;}
+  #sc-res .bxn{font-size:1.02rem;}
+  #sc-res .bxs{font-size:.88rem;color:#5e5439;}
+  ::-webkit-scrollbar{width:8px;} ::-webkit-scrollbar-track{background:rgba(0,0,0,.12);} ::-webkit-scrollbar-thumb{background:var(--navy);border-radius:0;}
+  @media(max-width:600px){.g2,.rr,.sg,.shareRow,.awards{grid-template-columns:1fr;}.dh{grid-template-columns:1fr;text-align:center;gap:.4rem;}.dcn{justify-self:center!important;}.reelCell{width:150px;flex-basis:150px;}.fnm{font-size:.5rem;}.fchip{width:60px;}.fdot{width:28px;height:28px;font-size:.6rem;}}
+
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<!-- ── Spin reveal overlay: slot-machine team pick + coin-flip for first pick ── -->
+<div id="spin" class="spin" onclick="skipSpin()">
+  <div class="spinHead" id="spinHead">🏈 Spinning up the next team…</div>
+  <div class="spinLogoWrap"><img class="spinLogo" id="spinLogo" alt=""></div>
+  <div class="reelWrap" id="reelWrap">
+    <div class="reel" id="reel"></div>
+    <div class="reelMark"></div>
+  </div>
+  <div class="coinWrap" id="coinWrap">
+    <div class="coinHead">Coin toss — who's on the clock?</div>
+    <div class="coinRow">
+      <div class="cfp" id="cf0"></div>
+      <div class="coin" id="coin">¢</div>
+      <div class="cfp p2" id="cf1"></div>
+    </div>
+    <div class="cfBadge" id="cfBadge"></div>
+  </div>
+  <div class="spinSkip">tap anywhere to skip ▸</div>
+</div>
+
+<div id="app">
+<div class="hdr"><h1>Gridiron Generals</h1><p>Draft · Strategize · Dominate</p></div>
+
+<div id="sc-mode" class="sc on">
+  <div class="modeTtl">Choose Your Game Mode</div>
+  <div class="modeGrid">
+    <button class="modeCard" onclick="chooseMode('h2h')">
+      <div class="modeIco">🤝</div><div class="modeName">Head to Head</div>
+      <div class="modeDesc">Two coaches, one screen. Draft from the same spun-in teams, then settle it on the field.</div>
+    </button>
+    <button class="modeCard" onclick="chooseMode('ai')">
+      <div class="modeIco">🤖</div><div class="modeName">Versus AI</div>
+      <div class="modeDesc">Solo play. Out-draft and out-coach a CPU opponent that knows the ratings.</div>
+    </button>
+    <button class="modeCard soon" disabled>
+      <div class="soonBadge">Coming Soon</div>
+      <div class="modeIco">🌐</div><div class="modeName">Online Matchups</div>
+      <div class="modeDesc">Draft and battle against coaches around the world.</div>
+    </button>
+  </div>
+</div>
+
+<div id="sc-setup" class="sc">
+  <div class="backLink" onclick="show('mode')">← Game Modes</div>
+  <div id="modeNote" class="modeNote"></div>
+  <div class="g2" id="setupG2">
+    <div class="cc p1"><div class="cbadge" id="p1badge">⬡ Coach One</div><label id="p1label">Your Name</label><input id="p1n" type="text" placeholder="Enter name" maxlength="20"></div>
+    <div class="cc p2" id="p2card"><div class="cbadge">⬡ Coach Two</div><label>Your Name</label><input id="p2n" type="text" placeholder="Enter name" maxlength="20"></div>
+  </div>
+  <div id="diffRow" class="diffRow" style="display:none">
+    <div class="diffTtl">CPU Difficulty</div>
+    <div class="seg diffSeg" id="diffSeg">
+      <button data-d="mod" class="on" onclick="setDiff('mod')">🎯 Moderate</button>
+      <button data-d="hard" onclick="setDiff('hard')">🧠 Mastermind</button>
+    </div>
+    <div class="diffDesc" id="diffDesc">Drafts smart and game-plans well — a real test, but beatable with good play.</div>
+  </div>
+  <div class="rbox"><div class="rl">How It Works</div>
+    <p>Each round, a random NFL team gets <strong style="color:var(--gold)">spun</strong> in — both coaches draft from that same team. A coin toss sets who picks first in Round 1, then it snakes. Build your roster: <strong style="color:var(--gold)">QB · RB · RB · WR · WR · TE · K · DEF</strong>, then pick a game plan once the rosters are set.</p>
+  </div>
+  <label class="tog"><input type="checkbox" id="simTog" checked><span class="togbox"></span><span class="togtx">Watch the game simulation <em>(off = jump straight to the final results)</em></span></label>
+  <label class="tog"><input type="checkbox" id="ratTog"><span class="togbox"></span><span class="togtx">Show player OVR ratings <em>(off = scout from memory — no ratings shown)</em></span></label>
+  <button class="btn" onclick="go()">⚡ Start Draft</button>
+  <div id="ratingSrc" style="text-align:center;margin-top:.65rem;font-family:'Barlow Condensed',sans-serif;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,240,232,.32)">Loading live ratings…</div>
+</div>
+
+<div id="sc-draft" class="sc">
+  <div class="dh">
+    <div class="dcn p1" id="dn1">P1</div>
+    <div class="tbn" id="tbn">Round 1</div>
+    <div class="dcn p2" id="dn2">P2</div>
+  </div>
+  <div class="clock p1" id="clock">On the Clock</div>
+  <div class="tr" id="teamReveal">
+    <div class="trL"><div class="tc" id="tcity"></div><div class="tn" id="tname">—</div></div>
+    <div class="ri"><div class="rnum" id="rnum">Round 1</div><div class="plbl p1" id="plbl">Pick</div></div>
+  </div>
+  <div class="pf" id="pf"></div>
+  <div class="pg" id="pg"></div>
+  <button class="btn" id="cb" onclick="cpick()" style="display:none;margin-top:0;margin-bottom:.65rem;"></button>
+  <div class="fieldWrap">
+    <div class="fieldTtl" id="fieldTtl">On the Field</div>
+    <div class="field" id="field"></div>
+  </div>
+  <div class="rr">
+    <div class="rp p1"><div class="rtt" id="rt1">Roster</div><div id="rs1"></div><div class="rnd" id="rnd1"></div></div>
+    <div class="rp p2"><div class="rtt" id="rt2">Roster</div><div id="rs2"></div><div class="rnd" id="rnd2"></div></div>
+  </div>
+  <div class="pbw"><div class="pbr" id="pbr" style="width:0%"></div></div>
+</div>
+
+<div id="sc-plan" class="sc">
+  <div class="planTtl">⚙️ Set Your Game Plan</div>
+  <p class="planSub">Rosters are locked. Choose how each team wants to attack — it shifts the pass/run mix and how the game plays out.</p>
+  <div class="g2">
+    <div class="cc p1"><div class="cbadge" id="pln1">Coach One</div><div class="planRoster" id="plr1"></div>
+      <label class="cl2">Game Plan</label>
+      <div class="seg" id="seg0">
+        <button data-s="run" onclick="setStyle(0,'run')">🏃 Run it</button>
+        <button data-s="bal" class="on" onclick="setStyle(0,'bal')">⚖️ Balanced</button>
+        <button data-s="pass" onclick="setStyle(0,'pass')">🎯 Air it out</button>
+      </div>
+      <div class="cpuNote" id="note0" style="display:none"></div>
+    </div>
+    <div class="cc p2"><div class="cbadge" id="pln2">Coach Two</div><div class="planRoster" id="plr2"></div>
+      <label class="cl2">Game Plan</label>
+      <div class="seg" id="seg1">
+        <button data-s="run" onclick="setStyle(1,'run')">🏃 Run it</button>
+        <button data-s="bal" class="on" onclick="setStyle(1,'bal')">⚖️ Balanced</button>
+        <button data-s="pass" onclick="setStyle(1,'pass')">🎯 Air it out</button>
+      </div>
+      <div class="cpuNote" id="note1" style="display:none"></div>
+    </div>
+  </div>
+  <button class="btn" onclick="startGame()">🏈 Kickoff</button>
+</div>
+
+<div id="sc-sim" class="sc">
+  <div class="sb">
+    <div><div class="stn" id="sn1"></div><div class="sc2 p1" id="ss1">0</div></div>
+    <div><div class="sv">VS</div><div class="qd" id="ql">Q1</div></div>
+    <div><div class="stn" id="sn2"></div><div class="sc2 p2" id="ss2">0</div></div>
+  </div>
+  <div class="pbp" id="pbp"></div>
+  <button class="btn" id="simNext" style="display:none" onclick="toResults()">📊 View Full Box Score &amp; Awards →</button>
+</div>
+
+<div id="sc-res" class="sc">
+  <div class="rf"><div class="rl2">Final Score</div><div class="rw" id="rwin"></div><div class="rsc" id="rsc2"></div></div>
+  <div class="awards">
+    <div class="awc mvp"><div class="awi">🏆</div><div class="awbody"><div class="awl">Game MVP</div><div class="awn" id="mvpn"></div><div class="aws" id="mvps"></div></div></div>
+    <div class="awc bust" id="bustc"><div class="awi">📉</div><div class="awbody"><div class="awl">Biggest Bust</div><div class="awn" id="bustn"></div><div class="aws" id="busts"></div></div></div>
+  </div>
+  <div class="km"><div class="kmt">⚡ Game Highlights</div><div id="kml"></div></div>
+  <div class="sg">
+    <div class="sp2 p1"><div class="spt" id="st1t"></div><div id="st1" class="totals"></div><div class="bxhd">Player Breakdown</div><div id="bx1" class="bx"></div></div>
+    <div class="sp2 p2"><div class="spt" id="st2t"></div><div id="st2" class="totals"></div><div class="bxhd">Player Breakdown</div><div id="bx2" class="bx"></div></div>
+  </div>
+  <button class="btn keysBtn" id="keysBtn" onclick="toggleKeys()">🎙️ Keys to the Game — Analyst Breakdown</button>
+  <div id="keysPanel" class="keysPanel" style="display:none"></div>
+  <button class="btn" onclick="showPlan()">🔁 Rematch — Same Teams, New Game Plan</button>
+  <div class="shareRow">
+    <button class="btn ghost" id="shareBtn" onclick="shareTeams()">🔗 Copy Result</button>
+    <button class="btn ghost" onclick="reset()">🏟️ New Draft</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ── ALL 32 TEAMS: ESPN depth charts verified April 2026 (FALLBACK) ──
+// Used as-is if live Madden ratings can't be fetched, and always the
+// source for the DEF + HC entries (Madden data has no team-D / coach rows).
+const FALLBACK_T=[
+{c:"Arizona",n:"Cardinals",p:[
+  {pos:"QB",name:"Jacoby Brissett",r:73},{pos:"QB",name:"Gardner Minshew",r:70},
+  {pos:"WR",name:"Marvin Harrison Jr.",r:89},{pos:"WR",name:"Michael Wilson",r:74},{pos:"WR",name:"Kendrick Bourne",r:70},
+  {pos:"RB",name:"James Conner",r:75},{pos:"RB",name:"Tyler Allgeier",r:70},
+  {pos:"TE",name:"Trey McBride",r:84},{pos:"TE",name:"Tip Reiman",r:62},
+  {pos:"K",name:"Chad Ryland",r:72},
+  {pos:"DEF",name:"Cardinals Defense",r:66},{pos:"HC",name:"Jonathan Gannon",r:66}
+]},
+{c:"Atlanta",n:"Falcons",p:[
+  {pos:"QB",name:"Michael Penix Jr.",r:80},{pos:"QB",name:"Tua Tagovailoa",r:82},
+  {pos:"WR",name:"Drake London",r:86},{pos:"WR",name:"Jahan Dotson",r:77},{pos:"WR",name:"Olamide Zaccheaus",r:68},
+  {pos:"RB",name:"Bijan Robinson",r:89},{pos:"RB",name:"Nathan Carter",r:67},
+  {pos:"TE",name:"Kyle Pitts",r:82},{pos:"TE",name:"Austin Hooper",r:65},
+  {pos:"K",name:"Younghoe Koo",r:86},
+  {pos:"DEF",name:"Falcons Defense",r:72},{pos:"HC",name:"Raheem Morris",r:71}
+]},
+{c:"Baltimore",n:"Ravens",p:[
+  {pos:"QB",name:"Lamar Jackson",r:98},{pos:"QB",name:"Tyler Huntley",r:68},
+  {pos:"WR",name:"Zay Flowers",r:84},{pos:"WR",name:"Rashod Bateman",r:74},{pos:"WR",name:"Devontez Walker",r:70},
+  {pos:"RB",name:"Derrick Henry",r:89},{pos:"RB",name:"Justice Hill",r:70},
+  {pos:"TE",name:"Mark Andrews",r:86},{pos:"TE",name:"Durham Smythe",r:64},
+  {pos:"K",name:"Tyler Loop",r:71},
+  {pos:"DEF",name:"Ravens Defense",r:85},{pos:"HC",name:"John Harbaugh",r:93}
+]},
+{c:"Buffalo",n:"Bills",p:[
+  {pos:"QB",name:"Josh Allen",r:97},{pos:"QB",name:"Kyle Allen",r:67},
+  {pos:"WR",name:"DJ Moore",r:84},{pos:"WR",name:"Khalil Shakir",r:80},{pos:"WR",name:"Keon Coleman",r:78},
+  {pos:"RB",name:"James Cook",r:85},{pos:"RB",name:"Ray Davis",r:69},
+  {pos:"TE",name:"Dalton Kincaid",r:76},{pos:"TE",name:"Dawson Knox",r:73},
+  {pos:"K",name:"Tyler Bass",r:80},
+  {pos:"DEF",name:"Bills Defense",r:82},{pos:"HC",name:"Sean McDermott",r:87}
+]},
+{c:"Carolina",n:"Panthers",p:[
+  {pos:"QB",name:"Bryce Young",r:75},{pos:"QB",name:"Kenny Pickett",r:72},
+  {pos:"WR",name:"Tetairoa McMillan",r:80},{pos:"WR",name:"Jalen Coker",r:72},{pos:"WR",name:"Xavier Legette",r:72},
+  {pos:"RB",name:"Chuba Hubbard",r:74},{pos:"RB",name:"Jonathon Brooks",r:72},
+  {pos:"TE",name:"Ja'Tavion Sanders",r:70},{pos:"TE",name:"Tommy Tremble",r:65},
+  {pos:"K",name:"Eddy Piñeiro",r:74},
+  {pos:"DEF",name:"Panthers Defense",r:65},{pos:"HC",name:"Dave Canales",r:68}
+]},
+{c:"Chicago",n:"Bears",p:[
+  {pos:"QB",name:"Caleb Williams",r:85},{pos:"QB",name:"Tyson Bagent",r:66},
+  {pos:"WR",name:"Rome Odunze",r:83},{pos:"WR",name:"Luther Burden III",r:78},{pos:"WR",name:"Olamide Zaccheaus",r:68},
+  {pos:"RB",name:"D'Andre Swift",r:82},{pos:"RB",name:"Kyle Monangai",r:68},
+  {pos:"TE",name:"Colston Loveland",r:76},{pos:"TE",name:"Cole Kmet",r:76},
+  {pos:"K",name:"Cairo Santos",r:79},
+  {pos:"DEF",name:"Bears Defense",r:75},{pos:"HC",name:"Ben Johnson",r:79}
+]},
+{c:"Cincinnati",n:"Bengals",p:[
+  {pos:"QB",name:"Joe Burrow",r:95},{pos:"QB",name:"Josh Johnson",r:63},
+  {pos:"WR",name:"Ja'Marr Chase",r:99},{pos:"WR",name:"Tee Higgins",r:88},{pos:"WR",name:"Andrei Iosivas",r:70},
+  {pos:"RB",name:"Chase Brown",r:77},{pos:"RB",name:"Samaje Perine",r:69},
+  {pos:"TE",name:"Mike Gesicki",r:74},{pos:"TE",name:"Drew Sample",r:64},
+  {pos:"K",name:"Evan McPherson",r:84},
+  {pos:"DEF",name:"Bengals Defense",r:75},{pos:"HC",name:"Zac Taylor",r:80}
+]},
+{c:"Cleveland",n:"Browns",p:[
+  {pos:"QB",name:"Shedeur Sanders",r:78},{pos:"QB",name:"Dillon Gabriel",r:72},
+  {pos:"WR",name:"Jerry Jeudy",r:80},{pos:"WR",name:"Cedric Tillman",r:70},{pos:"WR",name:"Isaiah Bond",r:68},
+  {pos:"RB",name:"Quinshon Judkins",r:77},{pos:"RB",name:"Dylan Sampson",r:68},
+  {pos:"TE",name:"David Njoku",r:82},{pos:"TE",name:"Jordan Akins",r:65},
+  {pos:"K",name:"Dustin Hopkins",r:78},
+  {pos:"DEF",name:"Browns Defense",r:76},{pos:"HC",name:"Kevin Stefanski",r:78}
+]},
+{c:"Dallas",n:"Cowboys",p:[
+  {pos:"QB",name:"Dak Prescott",r:88},{pos:"QB",name:"Sam Howell",r:72},
+  {pos:"WR",name:"CeeDee Lamb",r:97},{pos:"WR",name:"George Pickens",r:86},{pos:"WR",name:"Ryan Flournoy",r:67},
+  {pos:"RB",name:"Javonte Williams",r:77},{pos:"RB",name:"Jaydon Blue",r:65},
+  {pos:"TE",name:"Jake Ferguson",r:79},{pos:"TE",name:"Luke Schoonmaker",r:67},
+  {pos:"K",name:"Brandon Aubrey",r:92},
+  {pos:"DEF",name:"Cowboys Defense",r:79},{pos:"HC",name:"Brian Schottenheimer",r:70}
+]},
+{c:"Denver",n:"Broncos",p:[
+  {pos:"QB",name:"Bo Nix",r:82},{pos:"QB",name:"Jarrett Stidham",r:67},
+  {pos:"WR",name:"Courtland Sutton",r:82},{pos:"WR",name:"Marvin Mims Jr.",r:76},{pos:"WR",name:"Troy Franklin",r:73},
+  {pos:"RB",name:"J.K. Dobbins",r:80},{pos:"RB",name:"RJ Harvey",r:72},
+  {pos:"TE",name:"Adam Trautman",r:67},{pos:"TE",name:"Greg Dulcich",r:68},
+  {pos:"K",name:"Wil Lutz",r:82},
+  {pos:"DEF",name:"Broncos Defense",r:81},{pos:"HC",name:"Sean Payton",r:88}
+]},
+{c:"Detroit",n:"Lions",p:[
+  {pos:"QB",name:"Jared Goff",r:90},{pos:"QB",name:"Hendon Hooker",r:71},
+  {pos:"WR",name:"Amon-Ra St. Brown",r:91},{pos:"WR",name:"Jameson Williams",r:83},{pos:"WR",name:"Tim Patrick",r:70},
+  {pos:"RB",name:"Jahmyr Gibbs",r:89},{pos:"RB",name:"David Montgomery",r:82},
+  {pos:"TE",name:"Sam LaPorta",r:79},{pos:"TE",name:"Brock Wright",r:63},
+  {pos:"K",name:"Jake Bates",r:83},
+  {pos:"DEF",name:"Lions Defense",r:81},{pos:"HC",name:"Dan Campbell",r:90}
+]},
+{c:"Green Bay",n:"Packers",p:[
+  {pos:"QB",name:"Jordan Love",r:87},{pos:"QB",name:"Desmond Ridder",r:67},
+  {pos:"WR",name:"Jayden Reed",r:83},{pos:"WR",name:"Christian Watson",r:77},{pos:"WR",name:"Romeo Doubs",r:76},
+  {pos:"RB",name:"Josh Jacobs",r:83},{pos:"RB",name:"MarShawn Lloyd",r:68},
+  {pos:"TE",name:"Tucker Kraft",r:77},{pos:"TE",name:"Luke Musgrave",r:72},
+  {pos:"K",name:"Brayden Narveson",r:76},
+  {pos:"DEF",name:"Packers Defense",r:78},{pos:"HC",name:"Matt LaFleur",r:86}
+]},
+{c:"Houston",n:"Texans",p:[
+  {pos:"QB",name:"C.J. Stroud",r:91},{pos:"QB",name:"Davis Mills",r:67},
+  {pos:"WR",name:"Nico Collins",r:88},{pos:"WR",name:"Tank Dell",r:82},{pos:"WR",name:"Jayden Higgins",r:74},
+  {pos:"RB",name:"David Montgomery",r:82},{pos:"RB",name:"Woody Marks",r:68},
+  {pos:"TE",name:"Dalton Schultz",r:77},{pos:"TE",name:"Brevin Jordan",r:70},
+  {pos:"K",name:"Ka'imi Fairbairn",r:81},
+  {pos:"DEF",name:"Texans Defense",r:83},{pos:"HC",name:"DeMeco Ryans",r:84}
+]},
+{c:"Indianapolis",n:"Colts",p:[
+  {pos:"QB",name:"Daniel Jones",r:75},{pos:"QB",name:"Anthony Richardson",r:78},
+  {pos:"WR",name:"Michael Pittman Jr.",r:82},{pos:"WR",name:"Josh Downs",r:79},{pos:"WR",name:"Ashton Dulin",r:67},
+  {pos:"RB",name:"Jonathan Taylor",r:87},{pos:"RB",name:"Ameer Abdullah",r:66},
+  {pos:"TE",name:"Jelani Woods",r:72},{pos:"TE",name:"Mo Alie-Cox",r:64},
+  {pos:"K",name:"Matt Gay",r:82},
+  {pos:"DEF",name:"Colts Defense",r:73},{pos:"HC",name:"Shane Steichen",r:75}
+]},
+{c:"Jacksonville",n:"Jaguars",p:[
+  {pos:"QB",name:"Trevor Lawrence",r:86},{pos:"QB",name:"Mac Jones",r:71},
+  {pos:"WR",name:"Brian Thomas Jr.",r:85},{pos:"WR",name:"Gabe Davis",r:73},{pos:"WR",name:"Kevin Austin Jr.",r:68},
+  {pos:"RB",name:"Travis Etienne Jr.",r:83},{pos:"RB",name:"D'Ernest Johnson",r:66},
+  {pos:"TE",name:"Evan Engram",r:81},{pos:"TE",name:"Brenton Strange",r:65},
+  {pos:"K",name:"Cameron Dicker",r:80},
+  {pos:"DEF",name:"Jaguars Defense",r:72},{pos:"HC",name:"Liam Coen",r:72}
+]},
+{c:"Kansas City",n:"Chiefs",p:[
+  {pos:"QB",name:"Patrick Mahomes",r:99},{pos:"QB",name:"Justin Fields",r:77},
+  {pos:"WR",name:"Rashee Rice",r:86},{pos:"WR",name:"Xavier Worthy",r:82},{pos:"WR",name:"Tyquan Thornton",r:70},
+  {pos:"RB",name:"Kenneth Walker III",r:81},{pos:"RB",name:"Emari Demercado",r:67},
+  {pos:"TE",name:"Travis Kelce",r:93},{pos:"TE",name:"Noah Gray",r:68},
+  {pos:"K",name:"Harrison Butker",r:93},
+  {pos:"DEF",name:"Chiefs Defense",r:82},{pos:"HC",name:"Andy Reid",r:97}
+]},
+{c:"Las Vegas",n:"Raiders",p:[
+  {pos:"QB",name:"Kirk Cousins",r:77},{pos:"QB",name:"Aidan O'Connell",r:70},
+  {pos:"WR",name:"Tre Tucker",r:72},{pos:"WR",name:"Dont'e Thornton Jr.",r:70},{pos:"WR",name:"Jakobi Meyers",r:74},
+  {pos:"RB",name:"Ashton Jeanty",r:84},{pos:"RB",name:"Dylan Laube",r:66},
+  {pos:"TE",name:"Brock Bowers",r:88},{pos:"TE",name:"Michael Mayer",r:70},
+  {pos:"K",name:"Daniel Carlson",r:87},
+  {pos:"DEF",name:"Raiders Defense",r:66},{pos:"HC",name:"Klint Kubiak",r:65}
+]},
+{c:"LA",n:"Chargers",p:[
+  {pos:"QB",name:"Justin Herbert",r:91},{pos:"QB",name:"Trey Lance",r:70},
+  {pos:"WR",name:"Ladd McConkey",r:83},{pos:"WR",name:"Quentin Johnston",r:76},{pos:"WR",name:"Joshua Palmer",r:72},
+  {pos:"RB",name:"Omarion Hampton",r:80},{pos:"RB",name:"Kimani Vidal",r:68},
+  {pos:"TE",name:"Will Dissly",r:70},{pos:"TE",name:"Stone Smartt",r:64},
+  {pos:"K",name:"Cameron Dicker",r:82},
+  {pos:"DEF",name:"Chargers Defense",r:78},{pos:"HC",name:"Jim Harbaugh",r:89}
+]},
+{c:"LA",n:"Rams",p:[
+  {pos:"QB",name:"Matthew Stafford",r:86},{pos:"QB",name:"Stetson Bennett",r:65},
+  {pos:"WR",name:"Puka Nacua",r:86},{pos:"WR",name:"Cooper Kupp",r:84},{pos:"WR",name:"Tutu Atwell",r:72},
+  {pos:"RB",name:"Kyren Williams",r:85},{pos:"RB",name:"Blake Corum",r:73},
+  {pos:"TE",name:"Colby Parkinson",r:71},{pos:"TE",name:"Davis Allen",r:65},
+  {pos:"K",name:"Joshua Karty",r:76},
+  {pos:"DEF",name:"Rams Defense",r:82},{pos:"HC",name:"Sean McVay",r:92}
+]},
+{c:"Miami",n:"Dolphins",p:[
+  {pos:"QB",name:"Malik Willis",r:74},{pos:"QB",name:"Quinn Ewers",r:73},
+  {pos:"WR",name:"Jaylen Waddle",r:87},{pos:"WR",name:"Tahj Washington",r:71},{pos:"WR",name:"Theo Wease Jr.",r:67},
+  {pos:"RB",name:"De'Von Achane",r:88},{pos:"RB",name:"Jaylen Wright",r:71},
+  {pos:"TE",name:"Greg Dulcich",r:70},{pos:"TE",name:"Julian Hill",r:63},
+  {pos:"K",name:"Jason Sanders",r:81},
+  {pos:"DEF",name:"Dolphins Defense",r:73},{pos:"HC",name:"Mike McDaniel",r:82}
+]},
+{c:"Minnesota",n:"Vikings",p:[
+  {pos:"QB",name:"Kyler Murray",r:83},{pos:"QB",name:"J.J. McCarthy",r:76},
+  {pos:"WR",name:"Justin Jefferson",r:99},{pos:"WR",name:"Jordan Addison",r:83},{pos:"WR",name:"Jalen Nailor",r:68},
+  {pos:"RB",name:"Aaron Jones",r:80},{pos:"RB",name:"Jordan Mason",r:76},
+  {pos:"TE",name:"T.J. Hockenson",r:83},{pos:"TE",name:"Josh Oliver",r:64},
+  {pos:"K",name:"Will Reichard",r:79},
+  {pos:"DEF",name:"Vikings Defense",r:80},{pos:"HC",name:"Kevin O'Connell",r:83}
+]},
+{c:"New England",n:"Patriots",p:[
+  {pos:"QB",name:"Drake Maye",r:82},{pos:"QB",name:"Joshua Dobbs",r:70},
+  {pos:"WR",name:"Stefon Diggs",r:86},{pos:"WR",name:"Kayshon Boutte",r:71},{pos:"WR",name:"DeMario Douglas",r:71},
+  {pos:"RB",name:"Rhamondre Stevenson",r:79},{pos:"RB",name:"TreVeyon Henderson",r:71},
+  {pos:"TE",name:"Hunter Henry",r:75},{pos:"TE",name:"Austin Hooper",r:64},
+  {pos:"K",name:"Joey Slye",r:74},
+  {pos:"DEF",name:"Patriots Defense",r:72},{pos:"HC",name:"Mike Vrabel",r:86}
+]},
+{c:"New Orleans",n:"Saints",p:[
+  {pos:"QB",name:"Tyler Shough",r:73},{pos:"QB",name:"Spencer Rattler",r:72},
+  {pos:"WR",name:"Chris Olave",r:86},{pos:"WR",name:"Rashid Shaheed",r:77},{pos:"WR",name:"A.T. Perry",r:69},
+  {pos:"RB",name:"Travis Etienne Jr.",r:83},{pos:"RB",name:"Alvin Kamara",r:82},
+  {pos:"TE",name:"Taysom Hill",r:71},{pos:"TE",name:"Juwan Johnson",r:70},
+  {pos:"K",name:"Blake Grupe",r:74},
+  {pos:"DEF",name:"Saints Defense",r:75},{pos:"HC",name:"Darren Rizzi",r:67}
+]},
+{c:"NY",n:"Giants",p:[
+  {pos:"QB",name:"Jaxson Dart",r:76},{pos:"QB",name:"Jameis Winston",r:72},
+  {pos:"WR",name:"Malik Nabers",r:87},{pos:"WR",name:"Darius Slayton",r:72},{pos:"WR",name:"Darnell Mooney",r:74},
+  {pos:"RB",name:"Cam Skattebo",r:76},{pos:"RB",name:"Tyrone Tracy Jr.",r:73},
+  {pos:"TE",name:"Isaiah Likely",r:79},{pos:"TE",name:"Theo Johnson",r:67},
+  {pos:"K",name:"Graham Gano",r:78},
+  {pos:"DEF",name:"Giants Defense",r:71},{pos:"HC",name:"Brian Daboll",r:74}
+]},
+{c:"NY",n:"Jets",p:[
+  {pos:"QB",name:"Geno Smith",r:78},{pos:"QB",name:"Brady Cook",r:63},
+  {pos:"WR",name:"Garrett Wilson",r:91},{pos:"WR",name:"Adonai Mitchell",r:76},{pos:"WR",name:"Isaiah Williams",r:69},
+  {pos:"RB",name:"Breece Hall",r:85},{pos:"RB",name:"Braelon Allen",r:72},
+  {pos:"TE",name:"Mason Taylor",r:74},{pos:"TE",name:"Jeremy Ruckert",r:67},
+  {pos:"K",name:"Greg Zuerlein",r:76},
+  {pos:"DEF",name:"Jets Defense",r:82},{pos:"HC",name:"Aaron Glenn",r:73}
+]},
+{c:"Philadelphia",n:"Eagles",p:[
+  {pos:"QB",name:"Jalen Hurts",r:93},{pos:"QB",name:"Tanner McKee",r:67},
+  {pos:"WR",name:"A.J. Brown",r:94},{pos:"WR",name:"DeVonta Smith",r:88},{pos:"WR",name:"Johnny Wilson",r:71},
+  {pos:"RB",name:"Saquon Barkley",r:95},{pos:"RB",name:"Will Shipley",r:71},
+  {pos:"TE",name:"Grant Calcaterra",r:73},{pos:"TE",name:"Johnny Mundt",r:65},
+  {pos:"K",name:"Jake Elliott",r:86},
+  {pos:"DEF",name:"Eagles Defense",r:88},{pos:"HC",name:"Nick Sirianni",r:83}
+]},
+{c:"Pittsburgh",n:"Steelers",p:[
+  {pos:"QB",name:"Aaron Rodgers",r:84},{pos:"QB",name:"Mason Rudolph",r:74},
+  {pos:"WR",name:"DK Metcalf",r:87},{pos:"WR",name:"Michael Pittman Jr.",r:82},{pos:"WR",name:"Calvin Austin III",r:69},
+  {pos:"RB",name:"Jaylen Warren",r:75},{pos:"RB",name:"Rico Dowdle",r:74},
+  {pos:"TE",name:"Pat Freiermuth",r:77},{pos:"TE",name:"Darnell Washington",r:71},
+  {pos:"K",name:"Chris Boswell",r:87},
+  {pos:"DEF",name:"Steelers Defense",r:84},{pos:"HC",name:"Mike Tomlin",r:91}
+]},
+{c:"San Francisco",n:"49ers",p:[
+  {pos:"QB",name:"Brock Purdy",r:90},{pos:"QB",name:"Mac Jones",r:71},
+  {pos:"WR",name:"Brandon Aiyuk",r:90},{pos:"WR",name:"Deebo Samuel",r:85},{pos:"WR",name:"Jauan Jennings",r:75},
+  {pos:"RB",name:"Christian McCaffrey",r:97},{pos:"RB",name:"Jordan James",r:72},
+  {pos:"TE",name:"George Kittle",r:94},{pos:"TE",name:"Brayden Farrell",r:64},
+  {pos:"K",name:"Jake Moody",r:80},
+  {pos:"DEF",name:"49ers Defense",r:87},{pos:"HC",name:"Kyle Shanahan",r:91}
+]},
+{c:"Seattle",n:"Seahawks",p:[
+  {pos:"QB",name:"Sam Darnold",r:80},{pos:"QB",name:"Jalen Milroe",r:68},
+  {pos:"WR",name:"Jaxon Smith-Njigba",r:85},{pos:"WR",name:"Cooper Kupp",r:83},{pos:"WR",name:"Dont'e Thornton Jr.",r:70},
+  {pos:"RB",name:"Zach Charbonnet",r:78},{pos:"RB",name:"Kenny McIntosh",r:67},
+  {pos:"TE",name:"Noah Fant",r:72},{pos:"TE",name:"Colby Parkinson",r:65},
+  {pos:"K",name:"Jason Myers",r:82},
+  {pos:"DEF",name:"Seahawks Defense",r:78},{pos:"HC",name:"Mike Macdonald",r:79}
+]},
+{c:"Tampa Bay",n:"Buccaneers",p:[
+  {pos:"QB",name:"Baker Mayfield",r:84},{pos:"QB",name:"Jake Browning",r:68},
+  {pos:"WR",name:"Chris Godwin",r:83},{pos:"WR",name:"Jalen McMillan",r:74},{pos:"WR",name:"Sterling Shepard",r:67},
+  {pos:"RB",name:"Bucky Irving",r:77},{pos:"RB",name:"Kenneth Gainwell",r:69},
+  {pos:"TE",name:"Cade Otton",r:74},{pos:"TE",name:"Ko Kieft",r:62},
+  {pos:"K",name:"Chase McLaughlin",r:78},
+  {pos:"DEF",name:"Buccaneers Defense",r:76},{pos:"HC",name:"Todd Bowles",r:73}
+]},
+{c:"Tennessee",n:"Titans",p:[
+  {pos:"QB",name:"Cam Ward",r:76},{pos:"QB",name:"Mitchell Trubisky",r:68},
+  {pos:"WR",name:"Calvin Ridley",r:80},{pos:"WR",name:"Tyler Boyd",r:73},{pos:"WR",name:"Nick Westbrook-Ikhine",r:68},
+  {pos:"RB",name:"Tony Pollard",r:80},{pos:"RB",name:"Tyjae Spears",r:71},
+  {pos:"TE",name:"Chig Okonkwo",r:73},{pos:"TE",name:"Josh Whyle",r:63},
+  {pos:"K",name:"Nick Folk",r:78},
+  {pos:"DEF",name:"Titans Defense",r:69},{pos:"HC",name:"Brian Callahan",r:68}
+]},
+{c:"Washington",n:"Commanders",p:[
+  {pos:"QB",name:"Jayden Daniels",r:88},{pos:"QB",name:"Marcus Mariota",r:69},
+  {pos:"WR",name:"Terry McLaurin",r:86},{pos:"WR",name:"Noah Brown",r:69},{pos:"WR",name:"Dyami Brown",r:70},
+  {pos:"RB",name:"Jacory Croskey-Merritt",r:72},{pos:"RB",name:"Rachaad White",r:75},
+  {pos:"TE",name:"Zach Ertz",r:75},{pos:"TE",name:"John Bates",r:63},
+  {pos:"K",name:"Austin Seibert",r:76},
+  {pos:"DEF",name:"Commanders Defense",r:79},{pos:"HC",name:"Dan Quinn",r:81}
+]}
+];
+
+// Active team table — starts as fallback, replaced by live Madden data if fetch succeeds.
+let T=FALLBACK_T;
+let liveOn=false;
+
+// Team colors (primary / secondary) for the spin reveal + draft theming.
+const TEAM_COLORS={
+  Cardinals:['#97233F','#FFB612'],Falcons:['#A71930','#000000'],Ravens:['#241773','#9E7C0C'],Bills:['#00338D','#C60C30'],
+  Panthers:['#0085CA','#101820'],Bears:['#0B162A','#C83803'],Bengals:['#FB4F14','#000000'],Browns:['#311D00','#FF3C00'],
+  Cowboys:['#041E42','#869397'],Broncos:['#FB4F14','#002244'],Lions:['#0076B6','#B0B7BC'],Packers:['#203731','#FFB612'],
+  Texans:['#03202F','#A71930'],Colts:['#002C5F','#A2AAAD'],Jaguars:['#006778','#9F792C'],Chiefs:['#E31837','#FFB81C'],
+  Raiders:['#000000','#A5ACAF'],Chargers:['#0080C6','#FFC20E'],Rams:['#003594','#FFA300'],Dolphins:['#008E97','#FC4C02'],
+  Vikings:['#4F2683','#FFC62F'],Patriots:['#002244','#C60C30'],Saints:['#9F8958','#101820'],Giants:['#0B2265','#A71930'],
+  Jets:['#125740','#FFFFFF'],Eagles:['#004C54','#A5ACAF'],Steelers:['#FFB612','#101820'],'49ers':['#AA0000','#B3995D'],
+  Seahawks:['#002244','#69BE28'],Buccaneers:['#D50A0A','#34302B'],Titans:['#0C2340','#4B92DB'],Commanders:['#5A1414','#FFB612']
+};
+const tcol=n=>TEAM_COLORS[n]||['#3a6ea5','#888'];
+
+// ── LIVE MADDEN 26 RATINGS (madden-ratings-data.vercel.app, CORS-open CSV) ──
+// NOTE: the Madden feed is a 2025-season snapshot — it does NOT know about
+// 2026 offseason moves. Patch specific recent trades here (Madden name spelling
+// → destination team nickname) and they'll be applied on top of the live data.
+const OVERRIDES={
+  'A.J. Brown':'Patriots'
+};
+const POSMAP={'Quarterback':'QB','Wide Receiver':'WR','Halfback':'RB','Tight End':'TE','Kicker':'K'};
+const KEEP={QB:2,WR:3,RB:2,TE:2,K:1}; // skill starters to surface per position
+// Defensive rating = weighted blend of the projected nickel starters (11 players).
+const DGRP={Edge:['Left Edge','Right Edge'],DT:['Defensive Tackle'],
+  LB:['Mike Backer','Weak Backer','Sam Backer'],CB:['Cornerback'],S:['Free Safety','Strong Safety']};
+const DSTART={Edge:2,DT:2,LB:2,CB:3,S:2};
+const DPOSW={Edge:1.35,DT:1.0,LB:0.85,CB:1.25,S:1.05}; // positional value (pass rush + coverage carry a D)
+// Facet weights: the same defenders, blended three ways so a unit can specialize.
+const DFACET={
+  rush: {Edge:1.5,DT:0.9,LB:0.2},          // get-to-the-QB pressure
+  cover:{CB:1.3,S:1.0,LB:0.3},             // downfield coverage / ball-hawking
+  run:  {DT:1.2,LB:1.1,Edge:0.6,S:0.3}     // stuffing the run
+};
+function facetRating(team,weights){
+  let num=0,den=0;
+  for(const g in weights){
+    team.filter(p=>DGRP[g].includes(p.posRaw)).sort((a,b)=>b.r-a.r).slice(0,DSTART[g])
+      .forEach(p=>{num+=weights[g]*p.r;den+=weights[g];});
+  }
+  if(!den)return null;
+  const CENTER=80.5,STRETCH=1.5;
+  return Math.max(58,Math.min(99,Math.round(CENTER+STRETCH*(num/den-CENTER))));
+}
+
+function splitCSV(line){
+  const res=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){const ch=line[i];
+    if(q){if(ch==='"'){if(line[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+    else{if(ch==='"')q=true;else if(ch===','){res.push(cur);cur='';}else cur+=ch;}}
+  res.push(cur);return res;
+}
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.length);
+  const head=splitCSV(lines[0]),out=[];
+  for(let i=1;i<lines.length;i++){const f=splitCSV(lines[i]);if(f.length<5)continue;
+    const o={};head.forEach((h,j)=>o[h]=f[j]);out.push(o);}
+  return out;
+}
+// Team defense rating, two steps:
+//  1) position-weighted average of the projected nickel starters (EDGE/CB carry a unit),
+//     which captures overall unit quality but lands in a compressed ~76–85 band.
+//  2) stretch that around league-average starter quality (~80.5) by 1.5× so good and bad
+//     defenses are meaningfully separated (final spread ~74–87) — defense now matters.
+function teamDef(team){
+  let num=0,den=0;
+  for(const g in DGRP){
+    team.filter(p=>DGRP[g].includes(p.posRaw)).sort((a,b)=>b.r-a.r).slice(0,DSTART[g])
+      .forEach(p=>{num+=DPOSW[g]*p.r;den+=DPOSW[g];});
+  }
+  if(!den)return null;
+  const raw=num/den, CENTER=80.5, STRETCH=1.5;
+  const overall=Math.max(58,Math.min(99,Math.round(CENTER+STRETCH*(raw-CENTER))));
+  return {overall, rush:facetRating(team,DFACET.rush), cover:facetRating(team,DFACET.cover), run:facetRating(team,DFACET.run)};
+}
+// Specialty label from a DEF player's facet ratings (null if facets unavailable → fallback teams).
+function defSpec(d){
+  if(!d||d.dRush==null)return null;
+  const f={rush:d.dRush,cover:d.dCover,run:d.dRun};
+  const avg=(f.rush+f.cover+f.run)/3, top=Object.keys(f).sort((a,b)=>f[b]-f[a])[0];
+  const L={rush:{t:'Pass Rush',e:'⚡'},cover:{t:'Lockdown Coverage',e:'🔒'},run:{t:'Run Stuffers',e:'🧱'}};
+  if(f[top]-avg<2.0)return {t:'Balanced D',e:'🛡️',facet:'balanced'};
+  return {...L[top],facet:top};
+}
+// color-coded specialty chip, shared by the draft pool card and the game-plan roster row
+function specBadge(d,cls){const s=defSpec(d);if(!s)return '';
+  return `<span class="${cls} spec-${s.facet}"><span class="psi">${s.e}</span>${s.t}</span>`;}
+const stripHC=t=>{ // HC removed; trim backup QB unless it's a real battle (≤1 OVR gap)
+  const qbs=t.p.filter(p=>p.pos==='QB').sort((a,b)=>b.r-a.r);
+  const dropQB=qbs.length>1&&(qbs[0].r-qbs[1].r)>1?qbs[1].name:null;
+  const d=t.p.find(p=>p.pos==='DEF');
+  return {c:t.c,n:t.n,p:t.p.filter(p=>p.pos!=='HC'&&p.name!==dropQB),defBase:d?d.r:75};
+};
+function buildTeams(rows){
+  const byNick={};FALLBACK_T.forEach(t=>byNick[t.n]=t);
+  const all={},logos={};
+  rows.forEach(r=>{
+    const nick=(r.Team||'').split(' ').pop();
+    if(!byNick[nick])return;
+    if(!logos[nick]&&r['Team Logo'])logos[nick]=r['Team Logo'];
+    (all[nick]=all[nick]||[]).push({posRaw:r.Position,name:((r['First Name']||'')+' '+(r['Last Name']||'')).trim(),r:parseInt(r.Overall,10)||70,spd:parseInt(r.SPD,10)||72});
+  });
+  // apply manual trade overrides (move a player to a new team's pool)
+  for(const name in OVERRIDES){
+    const dest=OVERRIDES[name];if(!all[dest])continue;
+    for(const nk in all){const i=all[nk].findIndex(p=>p.name===name);
+      if(i>=0){all[dest].push(all[nk].splice(i,1)[0]);break;}}
+  }
+  const out=[];
+  FALLBACK_T.forEach(base=>{
+    const team=all[base.n];
+    if(!team||!team.length){out.push(stripHC(base));return;} // no live data → keep fallback
+    const players=[];
+    Object.keys(KEEP).forEach(sp=>{
+      const raws=Object.keys(POSMAP).filter(k=>POSMAP[k]===sp);
+      let cand=team.filter(p=>raws.includes(p.posRaw)).sort((a,b)=>b.r-a.r).slice(0,KEEP[sp]);
+      // only surface a backup QB if it's a genuine battle (within 1 OVR of the starter)
+      if(sp==='QB'&&cand.length>1&&(cand[0].r-cand[1].r)>1)cand=cand.slice(0,1);
+      cand.forEach(p=>players.push({pos:sp,name:p.name,r:p.r,spd:p.spd}));
+    });
+    // safety: never leave a required skill slot empty — backfill from fallback
+    ['QB','WR','RB','TE','K'].forEach(sp=>{
+      const need=(REQ[sp]||1)-players.filter(p=>p.pos===sp).length;
+      if(need>0)base.p.filter(p=>p.pos===sp).slice(0,need).forEach(p=>players.push({pos:p.pos,name:p.name,r:p.r}));
+    });
+    // live computed team defense (falls back to hardcoded value if no defenders found)
+    const baseDef=base.p.find(p=>p.pos==='DEF'),dr=teamDef(team);
+    const defVal=dr!=null?dr.overall:(baseDef?baseDef.r:75);
+    const fac=dr!=null?{rush:dr.rush,cover:dr.cover,run:dr.run}:null;
+    players.push({pos:'DEF',name:baseDef?baseDef.name:base.n+' Defense',r:defVal,
+      dRush:fac?fac.rush:defVal,dCover:fac?fac.cover:defVal,dRun:fac?fac.run:defVal});
+    out.push({c:base.c,n:base.n,p:players,logo:logos[base.n],defBase:defVal,defFac:fac}); // defBase/defFac kept so X-Factor bonus can be re-added on lazy load
+  });
+  return out;
+}
+function setSrc(txt){const el=document.getElementById('ratingSrc');if(el)el.textContent=txt;}
+async function loadLiveRatings(){
+  try{
+    const res=await fetch('https://madden-ratings-data.vercel.app/data.csv',{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const live=buildTeams(parseCSV(await res.text()));
+    if(live.length===32){T=live;liveOn=true;setSrc('Live Madden 26 ratings');}
+    else throw new Error('parse incomplete');
+  }catch(e){
+    console.warn('Live ratings unavailable — using hardcoded rosters.',e);
+    T=FALLBACK_T.map(stripHC);
+    setSrc('Offline ratings (hardcoded depth charts)');
+  }
+}
+const ratingsReady=loadLiveRatings();
+
+// ── LAZY: X-Factor / Superstar abilities (13MB feed) to refine the DEF rating ──
+// Madden has no published team-defense rating, so we derive it. This adds EA's
+// own elite-player flags on top of the unit-quality formula. Loads in the
+// background (rosters never wait on it); until ready, DEF OVR shows "…".
+let abilitiesReady=false, teamAbil={};
+const ABIL={xf:2.0,ss:0.8,cap:6}; // X-Factor / Superstar bonus weights
+const abilBonus=n=>{const t=teamAbil[n];return t?Math.min(ABIL.cap,t.xf*ABIL.xf+t.ss*ABIL.ss):0;};
+function applyAbilities(){
+  const cl=v=>Math.max(58,Math.min(99,Math.round(v)));
+  const patch=(d,t,b)=>{d.r=cl(t.defBase+b); if(t.defFac){d.dRush=cl(t.defFac.rush+b);d.dCover=cl(t.defFac.cover+b);d.dRun=cl(t.defFac.run+b);}};
+  T.forEach(t=>{const d=t.p.find(p=>p.pos==='DEF');
+    if(d&&t.defBase!=null)patch(d,t,abilBonus(t.n));});
+  // patch any defense already drafted so the sim uses the correct value
+  S.ro.forEach(roster=>roster.forEach(pl=>{
+    if(pl.pos==='DEF'){const nk=(pl.team||'').split(' ').pop(),t=T.find(x=>x.n===nk);
+      if(t&&t.defBase!=null)patch(pl,t,abilBonus(nk));}}));
+}
+function refreshDef(){ // re-render so newly-accurate DEF numbers appear
+  if(document.getElementById('sc-draft').classList.contains('on')){renderP();uRosters();renderField(cp());}
+}
+async function loadAbilities(){
+  try{
+    await ratingsReady;
+    const base='https://madden-ratings-data.vercel.app';
+    const man=await (await fetch(base+'/data/iterations.json',{cache:'no-store'})).json();
+    const path=man[man.length-1].path.replace('Madden_Ratings.csv','raw_ratings.json');
+    const raw=await (await fetch(base+path,{cache:'no-store'})).json();
+    const tally={};
+    raw.forEach(p=>{
+      if(!(p.position&&p.position.positionType&&p.position.positionType.name==='Defense'))return;
+      const nick=((p.team&&p.team.label)||'').split(' ').pop(),ab=p.playerAbilities||[];
+      const xf=ab.some(a=>a.type&&a.type.id==='xFactor');
+      const ss=!xf&&ab.some(a=>a.type&&a.type.id==='superstarAbility');
+      if(!tally[nick])tally[nick]={xf:0,ss:0};
+      if(xf)tally[nick].xf++;else if(ss)tally[nick].ss++;
+    });
+    teamAbil=tally;applyAbilities();
+  }catch(e){console.warn('Abilities feed unavailable — DEF uses unit-quality rating only.',e);}
+  abilitiesReady=true;refreshDef(); // release the loading guard either way
+}
+loadAbilities();
+
+const REQ={QB:1,WR:2,RB:2,TE:1,K:1,DEF:1};
+const POS=["QB","RB","WR","TE","K","DEF"];   // canonical display order: QB · RB×2 · WR×2 · TE · K · DEF
+const PORD={QB:0,RB:1,WR:2,TE:3,K:4,DEF:5};  // sort rank for pool + roster lists
+const SLOTS=POS.reduce((s,p)=>s+REQ[p],0); // roster slots per coach = rounds in the draft
+let S={c:["",""],mode:'h2h',cpu:-1,diff:'mod',ro:[[],[]],rnd:0,pip:0,rfp:0,team:null,sel:null,flt:"ALL",dk:[],watchSim:true,
+  showRatings:false,style:['bal','bal'],usedTeams:[],coinDone:false};
+let STYLE=['bal','bal']; // setup-screen selection, copied into S on Start
+let selMode='h2h';       // mode chosen on the mode screen, consumed by go()
+let selDiff='mod';       // CPU difficulty: 'mod' | 'hard'
+const CPU_NAMES=['Coach Cortex','The Algorithm','Coach Byte','Mainframe Mike','Coach Vector','Silicon Sam','Coach Neural'];
+const CPU_NAMES_HARD=['DeepCoach','OmniMind','The Oracle','Coach Singularity','GridGPT','Coach Apex'];
+// configure the setup screen for the chosen mode, then show it
+function chooseMode(m){
+  selMode=m;
+  const ai=m==='ai';
+  document.getElementById('p2card').style.display=ai?'none':'';
+  document.getElementById('setupG2').classList.toggle('single',ai);
+  document.getElementById('diffRow').style.display=ai?'block':'none';
+  document.getElementById('p1badge').textContent=ai?'⬡ You':'⬡ Coach One';
+  document.getElementById('p1label').textContent=ai?'Your Name':'Your Name';
+  document.getElementById('modeNote').textContent=ai
+    ? '🤖 Versus AI — draft and out-coach a CPU opponent'
+    : '🤝 Head to Head — two coaches, one screen';
+  show('setup');
+}
+function setDiff(d){
+  selDiff=d;
+  document.querySelectorAll('#diffSeg button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));
+  document.getElementById('diffDesc').textContent = d==='hard'
+    ? 'Drafts the optimal roster by value, then runs the numbers to pick its game plan. You\'ll need genuine know-how to beat it.'
+    : 'Drafts smart and game-plans well — a real test, but beatable with good play.';
+}
+const rand=a=>a[Math.floor(Math.random()*a.length)];
+const ri=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const cnt=(pi,p)=>S.ro[pi].filter(x=>x.pos===p).length;
+const nds=(pi,p)=>cnt(pi,p)<(REQ[p]||0);
+const ful=pi=>POS.every(p=>!nds(pi,p));
+const cp=()=>S.pip===0?S.rfp:1-S.rfp;
+// a picker is "stuck" if the current team has no available player at any position they still need
+const stuck=pi=>!S.team.p.some(x=>nds(pi,x.pos)&&!S.dk.includes(x.name));
+const hexA=(h,a)=>{const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;};
+const lum=h=>{const n=parseInt(h.slice(1),16);return 0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255);}; // perceived brightness 0-255
+const ink=h=>lum(h)<145?'#f3ecd7':'#16284a';     // legible text color on a given team color
+const inkMut=h=>lum(h)<145?'rgba(243,236,215,.78)':'rgba(22,40,74,.68)';
+const shade=(h,f)=>{const n=parseInt(h.slice(1),16);const c=v=>Math.max(0,Math.min(255,Math.round(v*f)));return `rgb(${c(n>>16&255)},${c(n>>8&255)},${c(n&255)})`;}; // lighten/darken a hex
+const lastName=n=>n.replace(/ (Jr\.?|Sr\.?|II|III|IV)$/,'').split(' ').slice(-1)[0];
+
+function setStyle(pi,s){
+  STYLE[pi]=s;
+  document.querySelectorAll(`#seg${pi} button`).forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+}
+// can BOTH of this round's pickers make a valid pick from team t? (assignment must exist)
+function teamFeasible(t){
+  const first=S.rfp,second=1-S.rfp;
+  const vA=t.p.filter(x=>nds(first,x.pos)),vB=t.p.filter(x=>nds(second,x.pos));
+  if(!vA.length||!vB.length)return false;
+  return new Set([...vA,...vB].map(x=>x.name)).size>=2; // need 2 distinct players
+}
+// pick an unused, draftable team; mark it used
+function pickTeam(){
+  const avail=T.filter(t=>!S.usedTeams.includes(t.n));
+  const pool=avail.length?avail:T;
+  const feas=pool.filter(teamFeasible);
+  const choice=rand(feas.length?feas:pool);
+  S.usedTeams.push(choice.n);
+  return choice;
+}
+// pick an unused team that has a valid pick for ONE specific coach (used when a picker gets stuck)
+function pickTeamFor(pi){
+  const avail=T.filter(t=>!S.usedTeams.includes(t.n));
+  const pool=avail.length?avail:T;
+  const ok=pool.filter(t=>t.p.some(x=>nds(pi,x.pos)));
+  const choice=rand(ok.length?ok:pool);
+  S.usedTeams.push(choice.n);
+  return choice;
+}
+// auto re-spin a fresh team for the coach on the clock when their pick can't be made here
+function soloRespin(){
+  S.team=pickTeamFor(cp());S.dk=[];S.sel=null;
+  document.getElementById('cb').style.display='none';
+  spinReveal(); // reveal the new team, then it's still this coach's pick
+}
+
+// ── CPU DRAFT (Versus AI) ──
+const POSVAL={QB:1.07,WR:1.0,RB:0.99,TE:0.95,DEF:1.03,K:0.82}; // MODERATE: premium up, K down
+// MASTERMIND valuation: value-over-replacement × sim-impact. Replacement = the OVR you can expect to
+// get later at that position; impact = how much the position swings the simulated game.
+const REPL={QB:78,WR:80,RB:79,TE:76,DEF:79,K:77};
+const IMP ={QB:1.32,WR:1.12,RB:1.0,DEF:1.22,TE:0.82,K:0.5};
+function cpuTurnNow(){return S.mode==='ai'&&cp()===S.cpu&&!ful(cp());}
+// eligible players for the CPU's current pick (honors the UI's sole-option lock)
+function cpuPool(){
+  const p=cp();
+  let locked=new Set();
+  if(S.pip===0){const other=1-S.rfp;
+    const oV=S.team.p.filter(x=>nds(other,x.pos)&&!S.dk.includes(x.name));
+    const mV=S.team.p.filter(x=>nds(p,x.pos)&&!S.dk.includes(x.name));
+    if(oV.length===1&&mV.length>1)locked.add(oV[0].name);}
+  let pool=S.team.p.filter(x=>nds(p,x.pos)&&!S.dk.includes(x.name)&&!locked.has(x.name));
+  if(!pool.length)pool=S.team.p.filter(x=>nds(p,x.pos)&&!S.dk.includes(x.name)); // safety
+  return pool;
+}
+function cpuChoose(){
+  const pool=cpuPool();
+  if(!pool.length)return null;
+  if(S.diff==='hard'){
+    // optimal: maximize value over replacement, weighted by how much the position moves the sim.
+    // Urgency rises for scarce needs as picks run out, so premium spots get filled before they're forced.
+    const p=cp(), picksLeft=SLOTS-S.ro[p].length;
+    let best=null,bs=-1e9;
+    pool.forEach(x=>{
+      const vor=Math.max(0,x.r-(REPL[x.pos]||78));
+      const stillNeed=(REQ[x.pos]||1)-cnt(p,x.pos);
+      const urgency=stillNeed>0&&picksLeft<=stillNeed+1?4:0; // must-fill bump late
+      const s=vor*(IMP[x.pos]||1)*3 + x.r*0.4 + urgency;
+      if(s>bs){bs=s;best=x;}});
+    return best;
+  }
+  // moderate: rating × positional value + jitter (human-like, beatable)
+  let best=null,bs=-1e9;
+  pool.forEach(x=>{const s=x.r*(POSVAL[x.pos]||1)+(Math.random()*6-3);
+    if(s>bs){bs=s;best=x;}});
+  return best;
+}
+function scheduleCpuPick(){
+  setTimeout(()=>{
+    if(!cpuTurnNow())return;
+    const pick=cpuChoose();
+    if(!pick)return; // stuck path handles a respin
+    S.sel=pick;
+    const card=[...document.querySelectorAll('#pg .pc')].find(c=>{const n=c.querySelector('.pn');return n&&n.textContent===pick.name;});
+    if(card){document.querySelectorAll('.pc').forEach(c=>c.classList.remove('sel'));card.classList.add('sel');}
+    setTimeout(()=>{ if(cpuTurnNow()&&S.sel)cpick(); }, ri(500,800)); // brief "decision" beat, then confirm
+  }, ri(700,1200));
+}
+// CPU game plan. Moderate: a heuristic (play to strength + attack the human's weak facet).
+// Mastermind: actually MONTE-CARLO each style vs the human's roster and pick the best expected margin.
+function cpuGameplan(ci,hi){
+  return S.diff==='hard'?cpuGameplanHard(ci,hi):cpuGameplanMod(ci,hi);
+}
+function cpuGameplanMod(ci,hi){
+  const avg=(pi,poss)=>{const a=S.ro[pi].filter(p=>poss.includes(p.pos));return a.length?a.reduce((s,p)=>s+p.r,0)/a.length:75;};
+  const passStr=avg(ci,['QB'])*0.55+avg(ci,['WR','TE'])*0.45, runStr=avg(ci,['RB']);
+  const hd=S.ro[hi].find(p=>p.pos==='DEF'), f=hd?{cover:hd.dCover||hd.r,run:hd.dRun||hd.r}:{cover:80,run:80};
+  const lean=(passStr-runStr)+(f.run-f.cover)*0.6; // + → pass, − → run
+  return lean>3?'pass':lean<-3?'run':'bal';
+}
+function cpuGameplanHard(ci,hi){
+  const saved=[...S.style];
+  let best='bal',bestM=-1e9;
+  ['run','bal','pass'].forEach(cs=>{
+    let m=0,n=0;
+    ['run','bal','pass'].forEach(hs=>{      // robust across whatever the human might call
+      for(let i=0;i<16;i++){S.style[ci]=cs;S.style[hi]=hs;const g=genGame();m+=g.fin[ci]-g.fin[hi];n++;}
+    });
+    m/=n;
+    if(m>bestM){bestM=m;best=cs;}
+  });
+  S.style=saved;
+  return best;
+}
+
+async function go(){
+  const human=document.getElementById('p1n').value.trim()||(selMode==='ai'?"You":"Coach One");
+  let p1,p2,cpu=-1;
+  if(selMode==='ai'){ p1=human; p2=rand(selDiff==='hard'?CPU_NAMES_HARD:CPU_NAMES); cpu=1; }
+  else { p1=human; p2=document.getElementById('p2n').value.trim()||"Coach Two"; }
+  S={c:[p1,p2],mode:selMode,cpu,diff:selDiff,ro:[[],[]],rnd:0,pip:0,rfp:Math.random()<.5?0:1,team:null,sel:null,flt:"ALL",dk:[],
+     watchSim:document.getElementById('simTog').checked,showRatings:document.getElementById('ratTog').checked,
+     style:[...STYLE],usedTeams:[],coinDone:false};
+  document.getElementById('dn1').textContent=p1;
+  document.getElementById('dn2').textContent=p2;
+  document.getElementById('rt1').textContent=p1+"'s Roster";
+  document.getElementById('rt2').textContent=p2+"'s Roster";
+  const btn=document.querySelector('#sc-setup .btn');
+  if(btn){btn.disabled=true;btn.textContent='Loading ratings…';}
+  await ratingsReady; // ensure live data (or fallback) is ready before drafting
+  if(btn){btn.disabled=false;btn.textContent='⚡ Start Draft';}
+  show('draft');newTeam();
+}
+
+function newTeam(){
+  S.team=pickTeam();S.dk=[];S.sel=null;S.pip=0;
+  document.getElementById('cb').style.display='none';
+  spinReveal();            // spin the team (+ round-1 coin flip), then reveal the board
+}
+
+// reveal the drafting board once the spin animation finishes
+function revealBoard(){
+  const [c1,c2]=tcol(S.team.n),txt=ink(c1),muted=inkMut(c1);
+  const halo=lum(c1)<145?'drop-shadow(0 0 5px rgba(255,255,255,.55))':'drop-shadow(0 0 5px rgba(0,0,0,.35))';
+  const trL=document.querySelector('#teamReveal .trL');
+  trL.innerHTML=`${S.team.logo?`<img class="trLogo" src="${S.team.logo}" style="filter:${halo} drop-shadow(0 1px 2px rgba(0,0,0,.4))" onerror="this.remove()">`:''}<div><div class="tc" id="tcity" style="color:${muted}">${S.team.c}</div><div class="tn" id="tname" style="color:${txt}">${S.team.n}</div></div>`;
+  const tr=document.getElementById('teamReveal');
+  // full team-color banner with auto-contrasting text (Option 1) — rich solid color, slight sheen
+  tr.style.background=`linear-gradient(105deg, ${shade(c1,1.16)} 0%, ${c1} 45%, ${shade(c1,.82)} 100%)`;
+  tr.style.border=`3px solid ${shade(c1,.78)}`;
+  tr.style.boxShadow=`5px 5px 0 ${c2}`;
+  const rn=document.getElementById('rnum');rn.textContent=`Round ${S.rnd+1} of ${SLOTS}`;rn.style.color=muted;
+  uTurn();renderP();uRosters();uProg();
+}
+
+
+// on-field formation for the team that's currently on the clock
+function renderField(pi){
+  const ro=S.ro[pi],get=pos=>ro.filter(r=>r.pos===pos);
+  const wr=get('WR'),rb=get('RB'),qb=get('QB')[0],te=get('TE')[0],k=get('K')[0],def=get('DEF')[0];
+  document.getElementById('fieldTtl').textContent=`${S.c[pi]} — On the Field`;
+  const showR=S.showRatings;
+  const nm=p=>p?lastName(p.name)+(showR?` ${p.r}`:''):'';
+  const chip=(x,y,cls,lab,name)=>`<div class="fchip" style="left:${x}%;top:${y}%"><div class="fdot ${cls}${name?'':' empty'}">${lab}</div><div class="fnm${name?'':' dim'}">${name||'—'}</div></div>`;
+  const ol=(x,l)=>`<div class="fchip" style="left:${x}%;top:42%"><div class="fdot ol">${l}</div></div>`;
+  let h=chip(50,15,'def','DEF',def?'Defense':'');
+  [['LT',31],['LG',40],['C',50],['RG',60],['RT',69]].forEach(([l,x])=>h+=ol(x,l));
+  h+=chip(8,42,'off','WR',nm(wr[0]));
+  h+=chip(87,42,'off','WR',nm(wr[1]));
+  h+=chip(78,42,'off','TE',nm(te));
+  h+=chip(50,60,'off','QB',nm(qb));
+  h+=chip(42,81,'off','HB',nm(rb[0]));      // lead back
+  h+=chip(60,81,'off','RB',nm(rb[1]));      // committee back
+  h+=chip(13,80,'off','K',nm(k));
+  document.getElementById('field').innerHTML=h;
+}
+
+// ── SPIN REVEAL (slot-machine team pick + coin-flip first-pick) ──
+let spinTimers=[],spinDone=null;
+function reelCell(t){
+  const logo=t.logo?`<img class="reelLogo" src="${t.logo}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'reelMono',textContent:'${t.n[0]}'}))">`:`<div class="reelMono">${t.n[0]}</div>`;
+  return `<div class="reelCell">${logo}<div class="reelName">${t.n}</div></div>`;
+}
+function spinReveal(){
+  const ov=document.getElementById('spin');
+  spinTimers.forEach(clearTimeout);spinTimers=[];
+  document.getElementById('coinWrap').classList.remove('on');
+  document.getElementById('cfBadge').classList.remove('on');
+  document.getElementById('cf0').className='cfp';document.getElementById('cf1').className='cfp p2';
+  document.getElementById('cf0').textContent=S.c[0];document.getElementById('cf1').textContent=S.c[1];
+  document.getElementById('spinHead').textContent=`🏈 Round ${S.rnd+1} — spinning up a team…`;
+  const logo=document.getElementById('spinLogo');logo.classList.remove('on');
+  const wrap=document.getElementById('reelWrap');wrap.style.boxShadow='inset 0 0 60px rgba(0,0,0,.6)';
+  ov.classList.add('on');
+  // build a long reel that lands on S.team
+  const CW=190,reel=document.getElementById('reel');
+  const seq=[];for(let i=0;i<6;i++)T.forEach(t=>seq.push(t));
+  const landIdx=seq.length;seq.push(S.team);
+  for(let i=0;i<4;i++)seq.push(rand(T));
+  reel.style.transition='none';reel.style.transform='translateX(0)';
+  reel.innerHTML=seq.map(reelCell).join('');
+  void reel.offsetWidth; // reflow so the next transform animates
+  spinTimers.push(setTimeout(()=>{
+    const w=wrap.clientWidth||Math.min(window.innerWidth*0.92,760); // robust to 0 at build time
+    const offset=landIdx*CW+CW/2-w/2+ri(-12,12);
+    reel.style.transition='transform 1.9s cubic-bezier(.12,.72,.15,1)';
+    reel.style.transform=`translateX(${-offset}px)`;
+  },30));
+  spinDone=revealBoard;
+  const doCoin=S.rnd===0&&!S.coinDone;
+  spinTimers.push(setTimeout(()=>{
+    const [c1]=tcol(S.team.n);
+    document.getElementById('spinHead').textContent=`📍 ${S.team.c} ${S.team.n}!`;
+    document.getElementById('spinHead').style.color=c1==='#000000'?'var(--gold)':c1;
+    wrap.style.boxShadow=`inset 0 0 50px rgba(0,0,0,.5), 0 0 30px ${hexA(c1,.55)}`;
+    if(S.team.logo){logo.src=S.team.logo;logo.classList.add('on');}
+    if(doCoin)coachFlip();                                  // coin toss only on round 1
+    else spinTimers.push(setTimeout(finishSpin,900));       // after that: straight to the board (snake order)
+  },2050));
+}
+function coachFlip(){
+  S.coinDone=true; // toss happens once per game
+  const cw=document.getElementById('coinWrap');cw.classList.add('on');
+  const pl=[document.getElementById('cf0'),document.getElementById('cf1')];
+  const fp=S.rfp,total=ri(10,14);let n=0;
+  const iv=setInterval(()=>{
+    pl[0].className='cfp'+(n%2===0?' lit':'');
+    pl[1].className='cfp p2'+(n%2===1?' lit':'');
+    n++;
+    if(n>=total){
+      clearInterval(iv);
+      pl[0].className='cfp'+(fp===0?' win':'');
+      pl[1].className='cfp p2'+(fp===1?' win':'');
+      const b=document.getElementById('cfBadge');
+      b.textContent=`${S.c[fp]} is on the clock!`;b.classList.add('on');
+      spinTimers.push(setTimeout(finishSpin,2150)); // hold ~1s longer after the toss lands
+    }
+  },105);
+  spinIv=iv;
+}
+let spinIv=null;
+function finishSpin(){
+  spinTimers.forEach(clearTimeout);spinTimers=[];
+  if(spinIv)clearInterval(spinIv);
+  document.getElementById('spin').classList.remove('on');
+  if(spinDone){const d=spinDone;spinDone=null;d();}
+}
+// click overlay to fast-forward the whole animation
+function skipSpin(){
+  if(!document.getElementById('spin').classList.contains('on'))return;
+  finishSpin();
+}
+
+function uTurn(){
+  S.flt='ALL'; // new picker → reset to all their open needs
+  const p=cp(),cl=p===0?'p1':'p2';
+  const tb=document.getElementById('tbn');
+  tb.textContent=`Round ${S.rnd+1} · Pick ${S.pip+1}/2`;
+  tb.style.background=p===0?'var(--p1)':'var(--p2)';
+  tb.style.color='#fff';
+  const pl=document.getElementById('plbl');
+  pl.textContent=S.c[p]+"'s Pick";pl.className='plbl '+cl;
+  if(S.team)pl.style.color=ink(tcol(S.team.n)[0]); // legible on the team-colored reveal banner
+  const ck=document.getElementById('clock');
+  ck.textContent=`⬡ ${S.c[p]} — On the Clock`;ck.className='clock '+cl;
+  document.querySelector('.rp.p1').classList.toggle('active',p===0);
+  document.querySelector('.rp.p2').classList.toggle('active',p===1);
+  if(S.mode==='ai'&&p===S.cpu){ck.textContent=`🤖 ${S.c[p]} is on the clock…`;}
+  renderFilters();renderField(p);
+  if(cpuTurnNow())scheduleCpuPick(); // Versus AI: CPU auto-drafts on its turn
+}
+
+// Build the filter row from the CURRENT coach's open roster needs only.
+function renderFilters(){
+  const p=cp(),pf=document.getElementById('pf');
+  const needs=POS.filter(pos=>nds(p,pos));
+  if(S.flt!=='ALL'&&!needs.includes(S.flt))S.flt='ALL';
+  let html='<span class="pfl">Still need:</span>';
+  html+=`<button class="pb2${S.flt==='ALL'?' on':''}" onclick="fp('ALL')">All</button>`;
+  needs.forEach(pos=>{
+    const left=(REQ[pos]||1)-cnt(p,pos);
+    html+=`<button class="pb2${S.flt===pos?' on':''}" onclick="fp('${pos}')">${pos}${left>1?' ×'+left:''}</button>`;
+  });
+  pf.innerHTML=html;
+}
+
+function fp(pos){S.flt=pos;renderFilters();renderP();}
+
+function renderP(){
+  const p=cp(),g=document.getElementById('pg');
+  g.innerHTML='';
+  // lock the opponent's SOLE remaining option when we pick first, so their pick is never stolen
+  let locked=new Set();
+  if(S.pip===0){
+    const other=1-S.rfp;
+    const oValid=S.team.p.filter(x=>nds(other,x.pos)&&!S.dk.includes(x.name));
+    const myValid=S.team.p.filter(x=>nds(p,x.pos)&&!S.dk.includes(x.name));
+    if(oValid.length===1&&myValid.length>1)locked.add(oValid[0].name);
+  }
+  // only show players at positions this coach still needs to fill, in canonical order
+  const pool=S.team.p.filter(x=>nds(p,x.pos)&&(S.flt==='ALL'||x.pos===S.flt))
+    .sort((a,b)=>(PORD[a.pos]-PORD[b.pos])||(b.r-a.r));
+  if(!pool.length){g.innerHTML='<div class="nop">No open needs match this filter.</div>';return;}
+  const cpuTurn=S.mode==='ai'&&p===S.cpu; // human can't click while the CPU is on the clock
+  g.classList.toggle('cpuwait',cpuTurn);
+  pool.forEach(pl=>{
+    const dk=S.dk.includes(pl.name),lk=locked.has(pl.name);
+    const d=document.createElement('div');
+    d.className='pc'+(dk||lk?' dk':'');
+    const tag=dk?'<div class="pr">✓ Drafted</div>'
+      :lk?`<div class="pr sf">🔒 ${S.c[1-S.rfp]} needs this</div>`
+      :S.showRatings?`<div class="pr">OVR ${pl.pos==='DEF'&&!abilitiesReady?'…':pl.r}</div>`:'';
+    const specTag=pl.pos==='DEF'?specBadge(pl,'pspec'):'';
+    d.innerHTML=`<div class="pp">${pl.pos}</div><div class="pn">${pl.name}</div>${specTag}${tag}`;
+    if(!dk&&!lk&&!cpuTurn)d.onclick=()=>sel(d,pl);
+    g.appendChild(d);
+  });
+}
+
+function sel(card,player){
+  const p=cp();
+  if(!nds(p,player.pos)){alert(`${S.c[p]}'s ${player.pos} slot is full! Pick another position.`);return;}
+  document.querySelectorAll('.pc').forEach(c=>c.classList.remove('sel'));
+  card.classList.add('sel');S.sel=player;
+  const b=document.getElementById('cb');
+  b.style.display='block';b.textContent=`✓ Draft ${player.name} (${player.pos})`;
+}
+
+function cpick(){
+  if(!S.sel)return;
+  const p=cp(),pl=S.sel;
+  S.ro[p].push({pos:pl.pos,name:pl.name,r:pl.r,team:`${S.team.c} ${S.team.n}`,
+    spd:pl.spd,dRush:pl.dRush,dCover:pl.dCover,dRun:pl.dRun}); // carry SPD + DEF facets so the sim/badges work
+  S.dk.push(pl.name);S.sel=null;
+  document.getElementById('cb').style.display='none';
+  if(ful(0)&&ful(1)){
+    uRosters();uProg();
+    setTimeout(showPlan,450); // rosters set → pick game plans, then kick off
+    return;
+  }
+  S.pip++;
+  if(S.pip>=2){S.rnd++;S.rfp=1-S.rfp;uRosters();uProg();setTimeout(newTeam,300);}
+  else if(stuck(cp())){uRosters();setTimeout(soloRespin,300);} // 2nd coach can't pick here → fresh team for them
+  else{uTurn();renderP();uRosters();}
+}
+
+function uRosters(){
+  // fixed slot template — positions stay put, drafted names just drop into their slot
+  const slots=[];POS.forEach(pos=>{for(let i=0;i<REQ[pos];i++)slots.push(pos);}); // QB,RB,WR,WR,TE,K,DEF
+  [0,1].forEach(pi=>{
+    const el=document.getElementById(`rs${pi+1}`);el.innerHTML='';
+    const byPos={};S.ro[pi].forEach(r=>{(byPos[r.pos]=byPos[r.pos]||[]).push(r);});
+    const used={};
+    slots.forEach(pos=>{
+      const idx=used[pos]||0;used[pos]=idx+1;
+      const r=(byPos[pos]||[])[idx];
+      const s=document.createElement('div');s.className='rs';
+      s.innerHTML=r
+        ?`<span class="sp">${pos}</span><span class="sn">${r.name}</span><span class="st2">${r.team||''}${S.showRatings?' · '+(r.pos==='DEF'&&!abilitiesReady?'…':r.r):''}</span>`
+        :`<span class="sp">${pos}</span><span class="se">—</span>`;
+      el.appendChild(s);
+    });
+    const nd=[];POS.forEach(pos=>{for(let i=cnt(pi,pos);i<REQ[pos];i++)nd.push(pos);});
+    document.getElementById(`rnd${pi+1}`).textContent=nd.length?'Needs: '+nd.join(', '):'✓ Complete!';
+  });
+}
+
+function uProg(){
+  const t=SLOTS*2,d=S.ro[0].length+S.ro[1].length;
+  document.getElementById('pbr').style.width=(d/t*100)+'%';
+}
+
+function tR(pi){const r=S.ro[pi];return r.length?Math.round(r.reduce((s,p)=>s+p.r,0)/r.length):75;}
+function gP(pi,pos){const a=S.ro[pi].filter(r=>r.pos===pos);return a.length?rand(a):{name:S.c[pi],r:70};}
+
+// ── Post-draft game plan screen ──
+function showPlan(){
+  ['pln1','pln2'].forEach((id,i)=>document.getElementById(id).textContent='⬡ '+S.c[i]);
+  if(S.mode==='ai')STYLE[S.cpu]=cpuGameplan(S.cpu,1-S.cpu); // CPU calls its own plan (hidden until kickoff)
+  [0,1].forEach(pi=>{
+    const rows=[...S.ro[pi]].sort((a,b)=>PORD[a.pos]-PORD[b.pos]).map(r=>{
+      let nm=r.name;
+      if(r.pos==='DEF')nm+=specBadge(r,'dspec');
+      return `<div class="pr-row"><span class="pr-pos">${r.pos}</span><span class="pr-nm">${nm}</span><span class="pr-tm">${r.team||''}</span></div>`;}).join('');
+    document.getElementById('plr'+(pi+1)).innerHTML=rows;
+    const seg=document.getElementById('seg'+pi), note=document.getElementById('note'+pi);
+    const isCpu=S.mode==='ai'&&pi===S.cpu;
+    seg.style.display=isCpu?'none':'';
+    note.style.display=isCpu?'block':'none';
+    if(isCpu)note.textContent='🤖 The CPU sets its own game plan — find out at kickoff.';
+    else seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.s===STYLE[pi]));
+  });
+  show('plan');
+}
+function startGame(){
+  S.style=[...STYLE];
+  const g=genGame();
+  if(S.watchSim){show('sim');startSim(g);}
+  else showRes(g.st,g.fin);
+}
+
+let lastGame=null;
+function startSim(g){
+  lastGame=g;
+  document.getElementById('sn1').textContent=S.c[0];
+  document.getElementById('sn2').textContent=S.c[1];
+  document.getElementById('ss1').textContent='0';
+  document.getElementById('ss2').textContent='0';
+  document.getElementById('pbp').innerHTML='';
+  document.getElementById('simNext').style.display='none';
+  let i=0;
+  function tick(){
+    if(i>=g.en.length){ // game over — STAY on the feed so players can read it; reveal a button to the box score
+      const f=g.fin;
+      addPBP({type:'q',text:`🏁 FINAL — ${S.c[0]} ${f[0]}, ${S.c[1]} ${f[1]}`});
+      document.getElementById('ql').textContent='FINAL';
+      const btn=document.getElementById('simNext');btn.style.display='block';
+      btn.scrollIntoView({behavior:'smooth',block:'nearest'});
+      return;
+    }
+    const e=g.en[i];addPBP(e);
+    document.getElementById('ss1').textContent=e.sc[0];
+    document.getElementById('ss2').textContent=e.sc[1];
+    if(e.q)document.getElementById('ql').textContent=e.q;
+    i++;setTimeout(tick,e.type==='q'?560:780); // slower so each play is readable
+  }
+  tick();
+}
+function toResults(){document.getElementById('simNext').style.display='none';if(lastGame)showRes(lastGame.st,lastGame.fin);}
+
+// Slim, drive-based sim. Only emits HIGHLIGHTS (scores, turnovers, big plays,
+// missed FGs) — no play-by-play spam — while tracking full box-score stats.
+function genGame(){
+  const en=[],sc=[0,0];
+  const st={py:[0,0],ry:[0,0],pa:[0,0],pc:[0,0],ca:[0,0],td:[0,0],fg:[0,0],to:[0,0],tp:[0,0],km:[],ps:{},mvp:{}};
+  const qb=[gP(0,'QB'),gP(1,'QB')],k=[gP(0,'K'),gP(1,'K')];
+  const rbs=[S.ro[0].filter(r=>r.pos==='RB'),S.ro[1].filter(r=>r.pos==='RB')];
+  // receiving pool now includes RBs (checkdown/screen targets), with position weights
+  const recv=[S.ro[0].filter(r=>['WR','TE','RB'].includes(r.pos)),S.ro[1].filter(r=>['WR','TE','RB'].includes(r.pos))];
+  const TGTW={WR:1,TE:.85,RB:.42}; // share of targets by position (RBs are checkdowns)
+  const P=(name,pos)=>{if(!st.ps[name])st.ps[name]={name,pos,pyd:0,ptd:0,pint:0,ryd:0,rtd:0,car:0,tgt:0,rec:0,recyd:0,rectd:0,fg:0,fga:0};return st.ps[name];};
+  let curQ=1;
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const score=()=>`(${sc[0]}–${sc[1]})`;
+  const emit=(of,type,text)=>{const e={q:curQ==='OT'?'OT':`Q${curQ}`,of,type,text,sc:[...sc]};en.push(e);if(type!=='q')st.km.push(e);};
+
+  // commentary banks (of = offense coach index)
+  const tdPass=(of,qb,rc,y,pl,dy)=>pick([
+    `🏈 TOUCHDOWN ${S.c[of]}! ${qb}→${rc} from ${y} — capping a ${pl}-play, ${dy}-yard drive. ${score()}`,
+    `🏈 SIX! ${qb} dials up ${rc} for a ${y}-yard strike. ${S.c[of]} cash in. ${score()}`,
+    `🏈 ${rc} gets loose! ${qb} finds him for ${y} and the score. ${score()}`]);
+  const tdRun=(of,rb,y,pl,dy)=>pick([
+    `🏈 TOUCHDOWN ${S.c[of]}! ${rb} bulldozes in from ${y}. ${pl} plays, ${dy} yards. ${score()}`,
+    `🏈 ${rb} finds paydirt — ${y}-yard TD run! ${score()}`,
+    `🏈 Hand it to ${rb}! He powers in from ${y} out. ${S.c[of]} strike. ${score()}`]);
+  const fgTxt=(of,kk,d)=>pick([
+    `🎯 ${kk} drills it from ${d}. ${S.c[of]} on the board. ${score()}`,
+    `🎯 Good from ${d}! ${kk} adds three for ${S.c[of]}. ${score()}`]);
+  const missTxt=(of,df,kk,d)=>pick([
+    `🚫 No good! ${kk}'s ${d}-yarder sails wide — ${S.c[df]} take over.`,
+    `🚫 ${kk} yanks the ${d}-yard try! Big miss for ${S.c[of]}.`]);
+  const intTxt=(of,df,qb)=>pick([
+    `🔴 INTERCEPTED! ${qb}'s pass is picked — ${S.c[df]} ball!`,
+    `🔴 PICK! ${S.c[df]} jump the route and take it from ${qb}!`]);
+  const fumTxt=(of,df,rb)=>pick([
+    `🟤 FUMBLE! ${rb} coughs it up and ${S.c[df]} pounce!`,
+    `🟤 Stripped! ${rb} loses the handle — ${S.c[df]} recover!`]);
+  const bigTxt=(of,who,y,kind)=>pick([
+    `💥 ${who} ${kind==='run'?'rips off':'goes for'} ${y} yards for ${S.c[of]}… but the drive stalls.`,
+    `💥 Explosive! ${who} picks up ${y}, though ${S.c[of]} come away empty.`]);
+
+  const prF=r=>(r-78)/100; // individual rating factor (~ -0.1 .. +0.2)
+  // Offense-vs-defense matchup: the suppression an offense feels comes from the DEFENSE it actually
+  // faces (opponent's DEF rating) measured against its own skill players — NOT a blurred team average.
+  const skillAvg=pi=>{const r=S.ro[pi].filter(p=>['QB','RB','WR','TE'].includes(p.pos));return r.length?r.reduce((s,p)=>s+p.r,0)/r.length:78;};
+  const defRat=pi=>{const d=S.ro[pi].find(p=>p.pos==='DEF');return d?d.r:78;};
+  // facet-specific defense: pass plays meet coverage(+rush), run plays meet the run-stop front
+  const defFacets=pi=>{const d=S.ro[pi].find(p=>p.pos==='DEF');return d&&d.dRush!=null?{rush:d.dRush,cover:d.dCover,run:d.dRun}:{rush:d?d.r:78,cover:d?d.r:78,run:d?d.r:78};};
+  // MASTERMIND coaching edge: the hard CPU is a sharper in-game coach (better execution + adjustments),
+  // so it gets a small matchup tilt on offense AND on defense. Only applies to the hard-mode CPU side —
+  // h2h / moderate / the gameplan Monte-Carlo for the human are untouched. You must out-draft + out-scheme it.
+  const CEDGE=0.10;
+  const coach=pi=>(S.mode==='ai'&&S.diff==='hard'&&pi===S.cpu)?CEDGE:0;
+  const edge=(of,df)=>coach(of)-coach(df); // CPU offense lifts, CPU defense suppresses the opponent
+  const oadv=(of,df)=>(skillAvg(of)-defRat(df))/100*1.5+edge(of,df); // overall matchup (used for FG)
+  // Facet matchup: keep the OVERALL level (1.5, already tuned) but AMPLIFY (×AMP) how far a unit's
+  // pass-D / run-D deviates from its own average, so specialists are strategically exploitable.
+  const AMP=1.9;
+  const passAdv=(of,df)=>{const f=defFacets(df),o=defRat(df),dp=f.cover*.62+f.rush*.38;return (skillAvg(of)-(o+(dp-o)*AMP))/100*1.5+edge(of,df);};
+  const runAdv =(of,df)=>{const f=defFacets(df),o=defRat(df);return (skillAvg(of)-(o+(f.run-o)*AMP))/100*1.5+edge(of,df);};
+  // Neutral pass rate by play style — wide gap so "air it out" / "run it" hit the extremes.
+  const BASE_PR={run:.44,bal:.51,pass:.70};
+  // Game-script-aware pass rate for a drive: trailing teams throw more, leaders run the clock,
+  // and the effect intensifies late. This is what makes each game's split actually vary.
+  const driveRate=(of,q,margin)=>{
+    const tw={1:.35,2:.55,3:.9,4:1.5}[q]||.6;       // late-game script bites hardest
+    const adj=-margin*0.014*tw;                       // +margin (leading) → fewer passes
+    return Math.max(.16,Math.min(.92,(BASE_PR[S.style[of]]||.56)+adj));
+  };
+  // receiver share weighted by position + rating, damped by targets already seen (RBs get fewer, shorter looks)
+  const pickRecv=of=>{const ts=recv[of];if(!ts.length)return{name:'a receiver',pos:'WR',r:70};
+    const ws=ts.map(r=>(TGTW[r.pos]||.6)*Math.pow(Math.max(6,r.r-54),1.5)/(1+(st.ps[r.name]?st.ps[r.name].tgt:0)*.16));
+    const tot=ws.reduce((a,b)=>a+b,0);let x=Math.random()*tot;
+    for(let i=0;i<ts.length;i++){x-=ws[i];if(x<=0)return ts[i];}return ts[ts.length-1];};
+  // pick a back: committee weighted by rating, damped by carries already taken (lead back ~60-70%)
+  const pickRB=of=>{const bs=rbs[of];if(!bs.length)return{name:'a back',pos:'RB',r:72};if(bs.length===1)return bs[0];
+    const ws=bs.map(r=>Math.pow(Math.max(6,r.r-58),1.5)/(1+(st.ps[r.name]?st.ps[r.name].car:0)*.13));
+    const tot=ws.reduce((a,b)=>a+b,0);let x=Math.random()*tot;
+    for(let i=0;i<bs.length;i++){x-=ws[i];if(x<=0)return bs[i];}return bs[bs.length-1];};
+  const passGain=(adv,qbR,rc)=>{
+    if(rc.pos==='RB'){const r=Math.random();let y=r<.62?ri(0,4):r<.92?ri(5,11):ri(12,28); // checkdown/screen — short with rare house call
+      return Math.max(0,Math.round(y*(1+prF(qbR)*.12+prF(rc.r)*.25+adv*.18)));}
+    const r=Math.random();let y;if(r<.62)y=ri(1,7);else if(r<.85)y=ri(8,14);else if(r<.97)y=ri(15,25);else y=ri(26,42);
+    return Math.max(1,Math.round(y*(1+prF(qbR)*.26+prF(rc.r)*.26+adv*.28)));};
+  // run gain ~4.3 ypc for an average back; rating drives both how often a back is stuffed and how far he breaks it,
+  // so elite backs (Bijan/CMC/Henry) clearly outgain replacement guys.
+  const runGain=(adv,rbR)=>{const b=prF(rbR);
+    if(Math.random()<Math.max(.13,.245-b*.5-adv*.13))return ri(-3,0); // stuffed (elite backs less often)
+    const r=Math.random(),base=r<.58?ri(1,4):r<.89?ri(5,10):ri(10,20);
+    return Math.round(base*(1+b*.72+adv*.22));};
+
+  function drive(of,df,adv,q,ot){
+    const QB=qb[of],K=k[of],RX=recv[of],Pq=P(QB.name,'QB');
+    const advP=passAdv(of,df), advR=runAdv(of,df);   // throw at their coverage, run at their front
+    const pr=driveRate(of,q,sc[of]-sc[df]);   // this drive's pass tendency (set by game script)
+    let fp=ri(32,52),dn=1,ytg=10,plays=0,dy=0,big=null;
+    while(true){
+      plays++;st.tp[of]++;
+      if(!ot&&st.tp[of]>66){if(big)emit(of,'big',bigTxt(of,big.who,big.y,big.kind));return;} // hard cap on team volume
+
+      const doPass=Math.random()<pr;
+      if(doPass){ // pass — graded vs the DEFENSE's coverage + rush
+        st.pa[of]++;
+        if(Math.random()<Math.max(.010,.030-advP*.016-prF(QB.r)*.04)){st.to[of]++;Pq.pint++;emit(of,'to',intTxt(of,df,QB.name));return;}
+        const rc=pickRecv(of),R=P(rc.name,rc.pos||'WR');R.tgt++; // intended target — counts on completions AND incompletions
+        // catch chance factors the RECEIVER's rating (good WRs catch a high, stable %), with a realistic floor so no one posts a 1/12 line
+        if(Math.random()<Math.max(.52,Math.min(.88,.64+advP*.07+prF(QB.r)*.28+prF(rc.r)*.4+(rc.pos==='RB'?.1:0)))){ // completion (RB checkdowns land more often)
+          const y=passGain(advP,QB.r,rc);st.py[of]+=y;st.pc[of]++;Pq.pyd+=y;
+          R.rec++;R.recyd+=y;
+          fp+=y;dy+=y;ytg-=y;if(y>=22&&(!big||y>big.y))big={who:`${QB.name}→${rc.name}`,y,kind:'pass'};
+          if(fp>=100){st.td[of]++;Pq.ptd++;R.rectd++;sc[of]+=7;emit(of,'td',tdPass(of,QB.name,rc.name,y,plays,dy));return;}
+          if(ytg<=0){dn=1;ytg=10;}else dn++;
+        } else dn++; // incompletion
+      } else { // run — committee of backs, plus QB designed runs/scrambles scaled by mobility (Lamar/Allen/Daniels run a LOT)
+        const qbMob=Math.max(0,Math.min(1,((QB.spd||74)-82)/12)); // 0 = pocket passer, 1 = elite runner (from live SPD)
+        const scram=Math.random()<(.05+qbMob*.32), runr=scram?QB:pickRB(of), R=P(runr.name,scram?'QB':'RB');
+        st.ca[of]++;R.car++;
+        if(Math.random()<.011){st.to[of]++;emit(of,'to',fumTxt(of,df,runr.name));return;}
+        const y=runGain(advR,scram?78+qbMob*16:runr.r),gv=Math.max(0,y);st.ry[of]+=gv;R.ryd+=gv;
+        fp+=y;dy+=gv;ytg-=y;if(y>=20&&(!big||y>big.y))big={who:runr.name,y,kind:'run'};
+        if(fp>=100){st.td[of]++;R.rtd++;sc[of]+=7;emit(of,'td',tdRun(of,runr.name,y,plays,dy));return;}
+        if(y>0&&ytg<=0){dn=1;ytg=10;}else dn++;
+      }
+      if(dn>4||plays>11){ // drive over — kick, punt, or downs
+        if(!ot){ // sudden-death OT plays for the TD only — no field goals
+          const dist=Math.max(20,100-fp+17), kf=prF(K.r);
+          const maxRange=54+kf*90;   // leg strength gates attempts: elite ~62, avg 54, weak ~49 (else punt)
+          if(dist<=maxRange){
+            const Pk=P(K.name,'K');Pk.fga++;
+            // accuracy = distance curve + rating (which matters MORE the longer the kick) + matchup
+            const far=Math.max(0,dist-33);
+            const p=Math.max(.35,Math.min(.985,.985-far*.021+kf*(.8+far*.032)+adv*.02));
+            if(Math.random()<p){st.fg[of]++;Pk.fg++;sc[of]+=3;emit(of,'fg',fgTxt(of,K.name,dist));}
+            else emit(of,'miss',missTxt(of,df,K.name,dist));
+            return;
+          }
+        }
+        if(big)emit(of,'big',bigTxt(of,big.who,big.y,big.kind)); // surface explosive plays on empty drives
+        return;
+      }
+    }
+  }
+
+  const total=ri(19,21);          // ~10 possessions per team → ~60-66 plays
+  let pos=Math.random()<.5?0:1;
+  for(let d=0;d<total;d++){
+    const q=Math.min(4,Math.floor(d/(total/4))+1);
+    if(d===0)en.push({q:'Q1',type:'q',text:'🏈 Kickoff — Q1',sc:[...sc]});
+    else if(q!==curQ){curQ=q;en.push({q:`Q${q}`,type:'q',text:`— Quarter ${q} —`,sc:[...sc]});}
+    drive(pos,1-pos,oadv(pos,1-pos),q);
+    pos=1-pos;
+  }
+
+  // 🇺🇸 NO TIES — sudden-death OT, first TOUCHDOWN wins
+  if(sc[0]===sc[1]){
+    curQ='OT';
+    en.push({q:'OT',type:'q',text:'🔥 OVERTIME — sudden death. First TD wins!',sc:[...sc]});
+    let p=Math.random()<.5?0:1,winner=-1,guard=0;
+    while(winner<0&&guard<16){
+      const before=sc[p];
+      drive(p,1-p,oadv(p,1-p),4,true); // ot=true → play for the end zone, no FGs
+      if(sc[p]-before>=6)winner=p;              // walk-off touchdown
+      p=1-p;guard++;
+    }
+    if(winner<0){winner=tR(0)>=tR(1)?0:1;sc[winner]+=6;} // safety net (near-impossible): edge to the better team
+    en.push({q:'OT',type:'td',text:`🎉 ${S.c[winner]} WIN IT IN OVERTIME! ${score()}`,sc:[...sc]});
+    st.km.push({q:'OT',type:'td',text:`🎉 ${S.c[winner]} win it in overtime! ${score()}`,sc:[...sc]});
+  }
+
+  // MVP
+  let mn='',ms='',mv=-1;
+  for(const s of Object.values(st.ps)){
+    const v=s.pyd+s.recyd*1.1+s.ryd*1.1+(s.ptd+s.rtd+s.rectd)*45+s.fg*22-s.pint*30;
+    if(v>mv){mv=v;mn=s.name;ms=fmvp(s);}
+  }
+  st.mvp={name:mn,stat:ms};
+  st.bust=bustOf(st.ps);
+  return{en,st,fin:[...sc]};
+}
+// Biggest Bust: the player who had real usage but the worst day (low efficiency / turnovers / misses).
+function bustOf(ps){
+  let bn='',bs='',bv=25; // threshold — only crown an actual stinker
+  for(const s of Object.values(ps)){
+    let b=-99;
+    if(s.pos==='QB'&&(s.pyd>0||s.pint>0))b=s.pint*30-s.ptd*16+Math.max(0,235-s.pyd)*.05;
+    else if(s.pos==='RB'&&s.car>=8)b=Math.max(0,4-s.ryd/s.car)*17-s.rtd*14;
+    else if((s.pos==='WR'||s.pos==='TE')&&s.tgt>=4)b=Math.max(0,7-s.recyd/s.tgt)*5+Math.max(0,.55-s.rec/s.tgt)*30-s.rectd*14;
+    else if(s.pos==='K'&&s.fga>=2)b=(s.fga-s.fg)*24;
+    if(b>bv){bv=b;bn=s.name;bs=fmvp(s);}
+  }
+  return bn?{name:bn,stat:bs}:null;
+}
+
+function fmvp(s){
+  const p=[];
+  if(s.pyd>0||s.ptd>0||s.pint>0){let q=`${s.pyd} pass yds, ${s.ptd} TD`;if(s.pint)q+=`, ${s.pint} INT`;p.push(q);}
+  if(s.car>0){let r=`${s.car} att, ${s.ryd} rush yds`;if(s.rtd)r+=`, ${s.rtd} TD`;p.push(r);}
+  if(s.tgt>0||s.rec>0){let w=`${s.rec} rec / ${s.tgt} tgt, ${s.recyd} yds`;if(s.rectd)w+=`, ${s.rectd} TD`;p.push(w);}
+  if(s.fga>0)p.push(`${s.fg}/${s.fga} FG`);
+  return p.join(' · ');
+}
+
+function addPBP(e){
+  const c=document.getElementById('pbp'),el=document.createElement('div');
+  if(e.type==='q'){el.className='pq';el.textContent=e.text;}
+  else{el.className='pe';const cl={td:'ptd',fg:'pfg',to:'pto',big:'pbig',miss:'ppu'}[e.type]||'pdrv';el.innerHTML=`<span class="${cl}">${e.text}</span>`;}
+  c.appendChild(el);c.scrollTop=c.scrollHeight;
+}
+
+function showRes(st,fin){
+  S.lastFin=fin;lastResSt=st;
+  const kp=document.getElementById('keysPanel');kp.style.display='none';kp.innerHTML='';
+  document.getElementById('keysBtn').textContent='🎙️ Keys to the Game — Analyst Breakdown';
+  const[p1,p2]=S.c,w=fin[0]>fin[1]?p1:fin[1]>fin[0]?p2:null;
+  document.getElementById('rwin').textContent=w?`${w} Wins!`:"It's a Tie!";
+  document.getElementById('rsc2').textContent=`${p1} ${fin[0]} — ${fin[1]} ${p2}`;
+  document.getElementById('mvpn').textContent=st.mvp.name||'—';
+  document.getElementById('mvps').textContent=st.mvp.stat||'';
+  const b=st.bust;
+  document.getElementById('bustn').textContent=b?b.name:'Nobody — both squads showed up';
+  document.getElementById('busts').textContent=b?b.stat:'No real stinkers this game';
+  const km=document.getElementById('kml');km.innerHTML='';
+  const hl=st.km.filter(m=>['td','fg','to','miss','big'].includes(m.type));
+  (hl.slice(-7)).forEach(m=>{const el=document.createElement('div');el.className='me';el.innerHTML=`<span class="ms">★</span>${m.text}`;km.appendChild(el);});
+  if(!hl.length)km.innerHTML='<div class="me" style="color:var(--mut2)">A defensive slugfest — no big plays.</div>';
+  // team totals + a FULL per-player breakdown (every drafted skill player, in roster order)
+  document.getElementById('st1t').textContent=`${p1} (${S.style[0]==='run'?'Run-heavy':S.style[0]==='pass'?'Pass-heavy':'Balanced'})`;
+  document.getElementById('st2t').textContent=`${p2} (${S.style[1]==='run'?'Run-heavy':S.style[1]==='pass'?'Pass-heavy':'Balanced'})`;
+  [['bx1','st1',0],['bx2','st2',1]].forEach(([bid,sid,pi])=>{
+    document.getElementById(sid).innerHTML=[
+      ['Score',fin[pi]],['Total Yds',st.py[pi]+st.ry[pi]],['Pass',`${st.py[pi]} yds · ${st.pc[pi]}/${st.pa[pi]}`],
+      ['Rush',`${st.ry[pi]} yds · ${st.ca[pi]} att`],['TDs',st.td[pi]],['FGs',st.fg[pi]],['Turnovers',st.to[pi]]
+    ].map(([l,v])=>`<div class="sr"><span class="sl">${l}</span><span class="svl">${v}</span></div>`).join('');
+    // one stacked row per drafted skill player, in roster order
+    const order=['QB','RB','WR','TE','K'];
+    const rows=[...S.ro[pi]].filter(r=>order.includes(r.pos))
+      .sort((a,b)=>order.indexOf(a.pos)-order.indexOf(b.pos))
+      .map(r=>{const s=st.ps[r.name],line=s?(fmvp(s)||'Did not record a stat'):'Did not play';
+        return `<div class="bxr"><div class="bxtop"><span class="bxp">${r.pos}</span><span class="bxn">${lastName(r.name)}</span></div><div class="bxs">${line}</div></div>`;});
+    document.getElementById(bid).innerHTML=rows.join('')||'<div class="bxr"><span class="bxs">—</span></div>';
+  });
+  show('res');
+}
+
+// ── "Keys to the Game" — analyst breakdown of WHY the game went the way it did ──
+let lastResSt=null;
+function gameKeys(st,fin){
+  const W=fin[0]>=fin[1]?0:1, L=1-W, Wn=S.c[W], Ln=S.c[L];
+  const margin=Math.abs(fin[0]-fin[1]);
+  const ot=st.km.some(m=>m.q==='OT');
+  const yds=pi=>st.py[pi]+st.ry[pi];
+  const ypc=pi=>st.ca[pi]?st.ry[pi]/st.ca[pi]:0;
+  const comp=pi=>st.pa[pi]?Math.round(100*st.pc[pi]/st.pa[pi]):0;
+  const big=pi=>st.km.filter(m=>m.type==='big'&&m.of===pi).length;
+  const ps=n=>st.ps[n]||{};
+  const qbN=pi=>{const q=S.ro[pi].find(p=>p.pos==='QB');return q?q.name:'';};
+  const lqb=qbN(L), wqb=qbN(W), L_=lastName(lqb), W_=lastName(wqb);
+  const lqbInt=ps(lqb).pint||0, lFum=Math.max(0,st.to[L]-lqbInt);
+  const spec=pi=>defSpec(S.ro[pi].find(p=>p.pos==='DEF'));
+  const toMargin=st.to[L]-st.to[W], rushDiff=st.ry[W]-st.ry[L], ydsDiff=yds(W)-yds(L);
+  const wDef=spec(W), lDef=spec(L);          // winner's D (loser faced it) / loser's D (winner faced it)
+  const rOf=(pi,pos)=>{const p=(S.ro[pi]||[]).find(x=>x.pos===pos);return p?p.r:80;};
+  const lqbR=rOf(L,'QB'), wqbR=rOf(W,'QB');
+  // real game-script signal: was the loser already behind at the half?
+  const h2=st.km.filter(m=>m.q==='Q1'||m.q==='Q2'), halfSc=h2.length?h2[h2.length-1].sc:[0,0];
+  const halfDef=halfSc[W]-halfSc[L];          // loser's halftime deficit (can be negative if they led)
+  const trailedEarly=halfDef>=8;
+  // winner's most productive pass-catcher (for matchup color)
+  const wRec=S.ro[W].filter(p=>['WR','TE'].includes(p.pos)).map(p=>({n:lastName(p.name),y:ps(p.name).recyd||0,c:ps(p.name).rec||0,td:ps(p.name).rectd||0})).sort((a,b)=>b.y-a.y)[0]||{y:0};
+
+  // the "bottom line" lead, framed by how close it was
+  let bottom;
+  if(ot) bottom=`${Wn} survived a sudden-death classic, ${fin[W]}–${fin[L]}. A game that needed extra football came down to inches — here's what actually tipped it.`;
+  else if(margin>=21) bottom=`${Wn} were never threatened, rolling ${fin[W]}–${fin[L]}. The why behind a lopsided one:`;
+  else if(margin>=11) bottom=`${Wn} stayed in control for a ${fin[W]}–${fin[L]} win. Here's what was really happening underneath the box score:`;
+  else if(margin>=4) bottom=`${Wn} did enough to win it, ${fin[W]}–${fin[L]}. A one-possession game — let's unpack what decided it:`;
+  else bottom=`${Wn} edged ${Ln} ${fin[W]}–${fin[L]} in a nail-biter. The fine margins that swung it:`;
+
+  const cand=[];
+
+  // ── CENTERPIECE: explain the losing side's offensive struggles and WHY they happened ──
+  const lc=comp(L), lqbY=ps(lqb).pyd||0;
+  const qbRough = lc<63 || lqbInt>=2 || (lqbY<195 && st.pa[L]>=23);
+  const runRough = ypc(L)<3.5 && st.ca[L]>=13;
+  // when a run-first team gets stoned (esp. by a run-stuffing front), the run wall is the headline,
+  // and the QB's bad day is a downstream symptom of becoming one-dimensional
+  const runIsStory = runRough && (S.style[L]==='run' || (wDef&&wDef.facet==='run'&&st.ca[L]>=14));
+  if(runRough){
+    let why;
+    if(wDef&&wDef.facet==='run')
+      why=`${Wn} is built to stop exactly this — a run-stuffing front that wins at the point of attack. ${rOf(L,'RB')>=85?`Even a back as good as ${Ln}'s deserved better blocking`:`The blocking never opened a crease`}, and ${ypc(L).toFixed(1)} yards a pop won't sustain drives.`;
+    else if(trailedEarly)
+      why=`Falling behind ${halfDef} by halftime forced ${Ln} to shelve the run before it could wear anyone down. A ground game needs a full slate of carries to pay off — chasing points took that option away.`;
+    else
+      why=`The push just wasn't there — ${st.ry[L]} yards on ${st.ca[L]} carries (${ypc(L).toFixed(1)}/att). When you can't run on early downs, every series becomes an obvious passing down, and the offense loses all its leverage.`;
+    cand.push({w:runIsStory?4.6:3.3,ico:'🧱',lbl:'The Run Game Got Stuck',txt:`${Ln} couldn't move it on the ground. ${why}`});
+  }
+  if(qbRough){
+    let why;
+    if(runIsStory)
+      why=`With the ground game stuffed (${ypc(L).toFixed(1)} a carry), ${Ln} turned one-dimensional — and that's the hardest place to play quarterback. The defense drops everyone into coverage and rushes knowing pass is the only option. ${L_}'s numbers are the symptom; the dead run game was the disease.`;
+    else if(wDef&&wDef.facet==='rush')
+      why=`The root cause was up front: ${Wn} drafted a pass-rush defense, and ${L_} never got to play clean. When the pocket caves, a passer throws before routes develop and off his back foot — that's why the ball sailed, why the timing died, and ${lqbInt?`where ${lqbInt===1?'the pick':'those picks'} came from. `:`why drives stalled. `}It wasn't bad decisions so much as no time to make good ones.`;
+    else if(wDef&&wDef.facet==='cover')
+      why=`${Wn}'s coverage is the reason. A lockdown secondary erases the easy completion, so ${L_} had to hold the ball and then squeeze throws into shrinking windows. ${lqbInt?`That's how a quarterback ends up with ${lqbInt} interception${lqbInt>1?'s':''} — not careless, just out of safe options. `:`That's why the completion rate cratered to ${lc}%. `}Against tight coverage, patience beats force — and the windows never opened.`;
+    else if(lqbR<=80)
+      why=`Some of this is just talent. At ${lqbR} overall, ${L_} isn't equipped to carry an offense with his arm when the script demands it, and a ${lc}% day${lqbInt?` with ${lqbInt} INT`:''} is what that ceiling looks like when tested.`;
+    else if(trailedEarly)
+      why=`Game script did the damage. Down ${halfDef} at the half, ${Ln} had to throw on early downs and abandon any disguise — and once a defense knows the pass is coming, it pins its ears back. ${lqbInt?`The ${lqbInt===1?'interception was':'interceptions were'} born of desperation, not ${L_}'s ability.`:`The offense became one-dimensional and easy to defend.`}`;
+    else
+      why=`There was just no rhythm — ${lc}% passing means ${L_} kept missing windows that were there, and an offense that can't stay on schedule keeps handing the ball back. This is a different game if those throws connect.`;
+    cand.push({w:runIsStory?2.7:5.5,ico:'🎯',lbl:`Why ${L_} Couldn't Get Going`,txt:`${L_}'s line — ${lqbY} yards, ${lc}% passing${lqbInt?`, ${lqbInt} INT`:''} — ${runIsStory?'only piled onto the misery':'tells the story of the loss'}. ${why}`});
+  }
+
+  // ── turnovers as a scoreboard consequence (only if not already explained as the QB story) ──
+  if(toMargin>=2 && !(qbRough && lqbInt>=2)){
+    const g=[];if(lqbInt)g.push(`${lqbInt} interception${lqbInt>1?'s':''}`);if(lFum)g.push(`${lFum} lost fumble${lFum>1?'s':''}`);
+    cand.push({w:4.2,ico:'🔄',lbl:'Giveaways Flipped the Field',txt:`${Ln}'s ${g.join(' and ')||'miscues'} were worth more than the box score shows: every takeaway handed ${Wn} a short field and erased a possession ${Ln} needed. In a game decided by ${margin}, those swung ${toMargin>=3?'far':'more'} more than ${toMargin} points of actual value.`});
+  }
+
+  // ── why the WINNER moved the ball (credit + the matchup they exploited) ──
+  if((ps(wqb).pyd||0)>=255||(ps(wqb).ptd||0)>=3){
+    let how;
+    if(lDef&&lDef.facet==='cover') how=`, and he did it the hard way — against ${Ln}'s best defensive trait`;
+    else if(lDef&&lDef.facet!=='cover') how=`, picking on ${Ln}'s coverage, their softest matchup, all night`;
+    else how='';
+    const recC=wRec.y>=60?`${wRec.n} was the safety valve that kept the chains moving (${wRec.c} for ${wRec.y}${wRec.td?`, ${wRec.td} TD`:''}). `:'';
+    cand.push({w:3.4,ico:'🅰️',lbl:`${W_} Controlled the Game`,txt:`${W_} put up ${ps(wqb).pyd||0} yards and ${ps(wqb).ptd||0} TD${(ps(wqb).ptd||0)===1?'':'s'} on ${comp(W)}% passing${how}. ${recC}When a quarterback is this efficient, a defense is always a step behind — it can't sit on the run or the pass.`});
+  } else if(wRec.y>=85 && lDef && lDef.facet!=='cover'){
+    cand.push({w:2.9,ico:'🎯',lbl:`${wRec.n} Found the Soft Spot`,txt:`${Wn} identified that coverage is ${Ln}'s weakest link and attacked it relentlessly — ${wRec.n} went off for ${wRec.y} yards on ${wRec.c} grabs${wRec.td?` and ${wRec.td} score${wRec.td>1?'s':''}`:''}. Smart offense isn't about your best play; it's about their worst matchup.`});
+  }
+
+  // ── ground game as the winner's identity ──
+  if(st.ry[W]>=145&&rushDiff>=45)
+    cand.push({w:3.0,ico:'🏉',lbl:'Won It in the Trenches',txt:`${Wn} leaned on the run — ${st.ry[W]} yards on ${st.ca[W]} carries (${ypc(W).toFixed(1)}/att) — and that does more than rack up yards: it shortens the game, keeps ${Ln}'s offense waiting on the sideline, and lets you dictate tempo. Control the line, control the night.`});
+
+  // ── red-zone inefficiency: moved it but couldn't finish ──
+  if(st.fg[L]>=3&&st.td[L]<=1&&yds(L)>=270)
+    cand.push({w:2.7,ico:'🥅',lbl:`${Ln} Stalled Inside the 20`,txt:`Here's the cruel part for ${Ln}: ${yds(L)} total yards usually wins. But the field shrinks near the goal line, windows close, and ${st.fg[L]} field goals against just ${st.td[L]} touchdown${st.td[L]===1?'':'s'} means they did the hard part and flinched on the easy one. Threes don't beat sevens.`});
+
+  // ── game control / script ──
+  if(trailedEarly && !qbRough)
+    cand.push({w:2.2,ico:'⏱️',lbl:'They Set the Tone Early',txt:`${Wn} grabbed an ${halfDef}-point halftime cushion, and that lead does the coaching for you — ${Ln} had to get one-dimensional and press, while ${Wn} could play it straight. Early leads compound; that's why the second half felt decided.`});
+
+  // ── efficiency edge (low-weight, still explanatory) ──
+  const ypp=pi=>st.tp[pi]?yds(pi)/st.tp[pi]:0;
+  if(ypp(W)-ypp(L)>=0.8)
+    cand.push({w:1.8,ico:'📈',lbl:'The Efficiency Gap',txt:`${Wn} gained ${ypp(W).toFixed(1)} yards every snap to ${Ln}'s ${ypp(L).toFixed(1)}. That gap sounds small, but over a game it's the difference between 3rd-and-2 and 3rd-and-8 — one keeps drives alive, the other ends them.`});
+
+  cand.sort((a,b)=>b.w-a.w);
+  let keys=cand.slice(0,4);
+  if(keys.length<3)keys.push({ico:'🏈',lbl:'Cleaner Football Won',txt:`No single moment defined this one — ${Wn} simply made fewer mistakes, stayed on schedule, and let ${Ln} beat themselves in small ways. Sometimes the story is the absence of a story.`});
+  return {bottom,keys};
+}
+function renderKeys(st,fin){
+  const {bottom,keys}=gameKeys(st,fin);
+  const rows=keys.map((k,i)=>`<div class="keyRow"><div class="keyIco">${k.ico}</div><div class="keyBody"><div class="keyLbl">${i+1}. ${k.lbl}</div><div class="keyTxt">${k.txt}</div></div></div>`).join('');
+  return `<div class="keysHead">🎙️ Keys to the Game</div><div class="keysBottom">${bottom}</div>${rows}`;
+}
+function toggleKeys(){
+  const p=document.getElementById('keysPanel'),b=document.getElementById('keysBtn');
+  if(p.style.display==='none'){ if(lastResSt)p.innerHTML=renderKeys(lastResSt,S.lastFin); p.style.display='block'; b.textContent='🎙️ Hide Analyst Breakdown'; p.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  else { p.style.display='none'; b.textContent='🎙️ Keys to the Game — Analyst Breakdown'; }
+}
+
+// share a compact result (clipboard) — 82-0 style
+function shareTeams(){
+  const lines=[`🏈 GRIDIRON GENERALS — ${S.c[0]} ${S.lastFin?S.lastFin[0]:''} – ${S.lastFin?S.lastFin[1]:''} ${S.c[1]}`,''];
+  [0,1].forEach(pi=>{
+    lines.push(`${S.c[pi]}'s squad:`);
+    const order=['QB','RB','WR','TE','K','DEF'];
+    [...S.ro[pi]].sort((a,b)=>order.indexOf(a.pos)-order.indexOf(b.pos))
+      .forEach(r=>lines.push(`  ${r.pos.padEnd(3)} ${r.name}`));
+    lines.push('');
+  });
+  lines.push('Build yours → Gridiron Generals');
+  const txt=lines.join('\n');
+  const btn=document.getElementById('shareBtn');
+  const done=()=>{btn.textContent='✓ Copied to clipboard!';setTimeout(()=>btn.textContent='🔗 Copy Shareable Result',2000);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>{prompt('Copy your result:',txt);});
+  else prompt('Copy your result:',txt);
+}
+
+function show(id){document.querySelectorAll('.sc').forEach(s=>s.classList.remove('on'));document.getElementById('sc-'+id).classList.add('on');}
+function reset(){S={c:["",""],mode:'h2h',cpu:-1,diff:'mod',ro:[[],[]],rnd:0,pip:0,rfp:0,team:null,sel:null,flt:"ALL",dk:[],watchSim:true,showRatings:false,style:[...STYLE],usedTeams:[],coinDone:false};document.getElementById('spin').classList.remove('on');document.getElementById('p1n').value='';document.getElementById('p2n').value='';show('mode');}
+</script>
+</body>
+</html>
