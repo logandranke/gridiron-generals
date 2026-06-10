@@ -29,7 +29,7 @@
   .g2.single{grid-template-columns:1fr;max-width:430px;margin-left:auto;margin-right:auto;}
   /* ── mode-select screen ── */
   .modeTtl{font-family:'Oswald',sans-serif;font-weight:700;text-transform:uppercase;text-align:center;color:var(--cream);font-size:1.55rem;letter-spacing:.04em;margin:.5rem 0 1.4rem;text-shadow:3px 3px 0 var(--gold),5px 5px 0 var(--navy);}
-  .modeGrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;}
+  .modeGrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
   .modeCard{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:.55rem;background:var(--paper);border:3px solid var(--navy);border-radius:14px;box-shadow:6px 6px 0 var(--navy);padding:1.7rem 1.05rem;cursor:pointer;font-family:inherit;color:var(--ink);transition:transform .12s,box-shadow .12s,border-color .12s;}
   .modeCard:hover:not(.soon){transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--gold);border-color:var(--gold);}
   .modeIco{font-size:2.7rem;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));}
@@ -100,6 +100,9 @@
   .pc.dk{opacity:.4;cursor:not-allowed;pointer-events:none;box-shadow:3px 3px 0 var(--navy);}
   .pc .pp{display:inline-block;font-family:'Anton',sans-serif;font-size:.7rem;letter-spacing:.02em;color:var(--cream);background:var(--navy);padding:.12rem .42rem;border-radius:3px;}
   .pc .pn{font-family:'Archivo Black',sans-serif;font-size:.96rem;color:var(--navy);line-height:1.1;margin-top:.45rem;}
+  .pc .ptm{margin-top:.2rem;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mut2);}
+  .fsearch{width:100%;background:#fff;border:3px solid var(--navy);border-radius:8px;color:var(--ink);font-family:'Barlow',sans-serif;font-size:1rem;padding:.6rem .85rem;outline:none;margin-bottom:.7rem;box-shadow:3px 3px 0 var(--navy);}
+  .fsearch:focus{border-color:var(--gold);box-shadow:3px 3px 0 var(--gold);}
   .pc .pr{margin-top:.3rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.74rem;letter-spacing:.03em;color:var(--red);}
   .pc .pspec{display:inline-flex;align-items:center;gap:.3em;margin-top:.45rem;font-family:'Anton',sans-serif;font-size:.76rem;letter-spacing:.04em;text-transform:uppercase;padding:.26rem .58rem;border-radius:6px;border:2.5px solid rgba(22,40,74,.9);box-shadow:2px 2px 0 rgba(22,40,74,.4);}
   .psi{font-size:1.3em;line-height:1;filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.45));}
@@ -321,6 +324,10 @@
       <div class="modeIco">🤝</div><div class="modeName">Head to Head</div>
       <div class="modeDesc">Two coaches, one screen. Draft from the same spun-in teams, then settle it on the field.</div>
     </button>
+    <button class="modeCard" onclick="chooseMode('fantasy')">
+      <div class="modeIco">📋</div><div class="modeName">Fantasy Draft</div>
+      <div class="modeDesc">Hand-pick ANY player in the league, fantasy-style. Two coaches build dream rosters — no spinning, snake order.</div>
+    </button>
     <button class="modeCard" onclick="chooseMode('ai')">
       <div class="modeIco">🤖</div><div class="modeName">Versus AI</div>
       <div class="modeDesc">Solo play. Out-draft and out-coach a CPU opponent that knows the ratings.</div>
@@ -349,7 +356,7 @@
     <div class="diffDesc" id="diffDesc">Drafts smart and game-plans well — a real test, but beatable with good play.</div>
   </div>
   <div class="rbox"><div class="rl">How It Works</div>
-    <p>Each round, a random NFL team gets <strong style="color:var(--gold)">spun</strong> in — both coaches draft from that same team. A coin toss sets who picks first in Round 1, then it snakes. Build your roster: <strong style="color:var(--gold)">QB · RB · RB · WR · WR · TE · K · DEF</strong>, then pick a game plan once the rosters are set.</p>
+    <p id="howItWorks">Each round, a random NFL team gets <strong style="color:var(--gold)">spun</strong> in — both coaches draft from that same team. A coin toss sets who picks first in Round 1, then it snakes. Build your roster: <strong style="color:var(--gold)">QB · RB · RB · WR · WR · TE · K · DEF</strong>, then pick a game plan once the rosters are set.</p>
   </div>
   <label class="tog"><input type="checkbox" id="simTog" checked><span class="togbox"></span><span class="togtx">Watch the game simulation <em>(off = jump straight to the final results)</em></span></label>
   <label class="tog"><input type="checkbox" id="ratTog"><span class="togbox"></span><span class="togtx">Show player OVR ratings <em>(off = scout from memory — no ratings shown)</em></span></label>
@@ -368,6 +375,7 @@
     <div class="trL"><div class="tc" id="tcity"></div><div class="tn" id="tname">—</div></div>
     <div class="ri"><div class="rnum" id="rnum">Round 1</div><div class="plbl p1" id="plbl">Pick</div></div>
   </div>
+  <div id="fsearchWrap" style="display:none"><input id="fsearch" class="fsearch" type="text" placeholder="🔍 Search any player or team…" oninput="renderFantasyPool()"></div>
   <div class="pf" id="pf"></div>
   <div class="pg" id="pg"></div>
   <button class="btn" id="cb" onclick="cpick()" style="display:none;margin-top:0;margin-bottom:.65rem;"></button>
@@ -874,7 +882,7 @@ function applyAbilities(){
       if(t&&t.defBase!=null)patch(pl,t,abilBonus(nk));}}));
 }
 function refreshDef(){ // re-render so newly-accurate DEF numbers appear
-  if(document.getElementById('sc-draft').classList.contains('on')){renderP();uRosters();renderField(cp());}
+  if(document.getElementById('sc-draft').classList.contains('on')){(S.mode==='fantasy'?renderFantasyPool:renderP)();uRosters();renderField(cp());}
 }
 async function loadAbilities(){
   try{
@@ -912,15 +920,18 @@ const CPU_NAMES_HARD=['DeepCoach','OmniMind','The Oracle','Coach Singularity','G
 // configure the setup screen for the chosen mode, then show it
 function chooseMode(m){
   selMode=m;
-  const ai=m==='ai';
+  const ai=m==='ai', fant=m==='fantasy';
   document.getElementById('p2card').style.display=ai?'none':'';
   document.getElementById('setupG2').classList.toggle('single',ai);
   document.getElementById('diffRow').style.display=ai?'block':'none';
   document.getElementById('p1badge').textContent=ai?'⬡ You':'⬡ Coach One';
-  document.getElementById('p1label').textContent=ai?'Your Name':'Your Name';
   document.getElementById('modeNote').textContent=ai
     ? '🤖 Versus AI — draft and out-coach a CPU opponent'
+    : fant ? '📋 Fantasy Draft — hand-pick any player, snake-style'
     : '🤝 Head to Head — two coaches, one screen';
+  document.getElementById('howItWorks').innerHTML=fant
+    ? 'Take turns hand-picking <strong style="color:var(--gold)">any player in the league</strong> — pick order snakes, flipping each round so nobody hoards the top tier. No teams spun, no limits. Use the search to find your guys. Build <strong style="color:var(--gold)">QB · RB · RB · WR · WR · TE · K · DEF</strong>, then set a game plan and play it out.'
+    : 'Each round, a random NFL team gets <strong style="color:var(--gold)">spun</strong> in — both coaches draft from that same team. A coin toss sets who picks first in Round 1, then it snakes. Build your roster: <strong style="color:var(--gold)">QB · RB · RB · WR · WR · TE · K · DEF</strong>, then pick a game plan once the rosters are set.';
   show('setup');
 }
 function setDiff(d){
@@ -1076,13 +1087,59 @@ async function go(){
   if(btn){btn.disabled=true;btn.textContent='Loading ratings…';}
   await ratingsReady; // ensure live data (or fallback) is ready before drafting
   if(btn){btn.disabled=false;btn.textContent='⚡ Start Draft';}
-  show('draft');newTeam();
+  const fant=S.mode==='fantasy';
+  document.getElementById('teamReveal').style.display=fant?'none':'';     // no spun-team banner in fantasy
+  document.getElementById('fsearchWrap').style.display=fant?'block':'none';
+  show('draft');
+  if(fant)fantasyStart(); else newTeam();
 }
 
 function newTeam(){
   S.team=pickTeam();S.dk=[];S.sel=null;S.pip=0;
   document.getElementById('cb').style.display='none';
   spinReveal();            // spin the team (+ round-1 coin flip), then reveal the board
+}
+
+// ── FANTASY DRAFT (free-pick from the whole league, snake order, PvP) ──
+function fantasyStart(){
+  // flatten every surfaced player across all 32 teams into one draftable pool
+  S.pool=T.flatMap(t=>t.p.map(p=>({...p,team:`${t.c} ${t.n}`,teamNick:t.n})));
+  S.rnd=0;S.pip=0;S.sel=null;S.flt='ALL';     // rfp already coin-tossed in go()
+  document.getElementById('cb').style.display='none';
+  const fs=document.getElementById('fsearch');if(fs)fs.value='';
+  fantasyTurn();
+}
+function fantasyTurn(){
+  S.flt=S.flt||'ALL';
+  const p=cp(),cl=p===0?'p1':'p2';
+  const tb=document.getElementById('tbn');
+  tb.textContent=`Round ${S.rnd+1} · Pick ${S.pip+1}/2`;
+  tb.style.background=p===0?'var(--p1)':'var(--p2)';tb.style.color='#fff';
+  const ck=document.getElementById('clock');
+  ck.textContent=`⬡ ${S.c[p]} — On the Clock`;ck.className='clock '+cl;
+  document.querySelector('.rp.p1').classList.toggle('active',p===0);
+  document.querySelector('.rp.p2').classList.toggle('active',p===1);
+  renderFilters();renderField(p);renderFantasyPool();uRosters();uProg();
+}
+function renderFantasyPool(){
+  const p=cp(),g=document.getElementById('pg');
+  const q=(document.getElementById('fsearch')?.value||'').trim().toLowerCase();
+  let pool=S.pool.filter(x=>nds(p,x.pos)&&!S.dk.includes(x.name)
+    &&(S.flt==='ALL'||x.pos===S.flt)
+    &&(!q||x.name.toLowerCase().includes(q)||x.teamNick.toLowerCase().includes(q)));
+  pool.sort((a,b)=>(PORD[a.pos]-PORD[b.pos])||(b.r-a.r)); // best available first
+  g.classList.remove('cpuwait');g.innerHTML='';
+  const CAP=60,total=pool.length,shown=pool.slice(0,CAP);
+  if(!shown.length){g.innerHTML='<div class="nop">No available players match — try clearing the search or filter.</div>';return;}
+  shown.forEach(pl=>{
+    const d=document.createElement('div');d.className='pc';
+    const tag=S.showRatings?`<div class="pr">OVR ${pl.pos==='DEF'&&!abilitiesReady?'…':pl.r}</div>`:'';
+    const specTag=pl.pos==='DEF'?specBadge(pl,'pspec'):'';
+    d.innerHTML=`<div class="pp">${pl.pos}</div><div class="pn">${pl.name}</div><div class="ptm">${pl.teamNick}</div>${specTag}${tag}`;
+    d.onclick=()=>sel(d,pl);
+    g.appendChild(d);
+  });
+  if(total>CAP){const m=document.createElement('div');m.className='nop';m.style.gridColumn='1/-1';m.textContent=`+${total-CAP} more available — refine with the search or a position filter`;g.appendChild(m);}
 }
 
 // reveal the drafting board once the spin animation finishes
@@ -1231,7 +1288,7 @@ function renderFilters(){
   pf.innerHTML=html;
 }
 
-function fp(pos){S.flt=pos;renderFilters();renderP();}
+function fp(pos){S.flt=pos;renderFilters();(S.mode==='fantasy'?renderFantasyPool:renderP)();}
 
 function renderP(){
   const p=cp(),g=document.getElementById('pg');
@@ -1276,7 +1333,7 @@ function sel(card,player){
 function cpick(){
   if(!S.sel)return;
   const p=cp(),pl=S.sel;
-  S.ro[p].push({pos:pl.pos,name:pl.name,r:pl.r,team:`${S.team.c} ${S.team.n}`,
+  S.ro[p].push({pos:pl.pos,name:pl.name,r:pl.r,team:pl.team||(S.team?`${S.team.c} ${S.team.n}`:''),
     spd:pl.spd,dRush:pl.dRush,dCover:pl.dCover,dRun:pl.dRun}); // carry SPD + DEF facets so the sim/badges work
   S.dk.push(pl.name);S.sel=null;
   document.getElementById('cb').style.display='none';
@@ -1286,6 +1343,11 @@ function cpick(){
     return;
   }
   S.pip++;
+  if(S.mode==='fantasy'){ // free-pick snake: no team spin, just hand the board to the next picker
+    if(S.pip>=2){S.rnd++;S.rfp=1-S.rfp;S.pip=0;}
+    uRosters();uProg();setTimeout(fantasyTurn,160);
+    return;
+  }
   if(S.pip>=2){S.rnd++;S.rfp=1-S.rfp;uRosters();uProg();setTimeout(newTeam,300);}
   else if(stuck(cp())){uRosters();setTimeout(soloRespin,300);} // 2nd coach can't pick here → fresh team for them
   else{uTurn();renderP();uRosters();}
